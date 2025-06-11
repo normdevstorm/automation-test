@@ -15,7 +15,6 @@ import org.testng.annotations.Test;
 import pages.ViewCartPage;
 
 import java.time.Duration;
-@Test(groups = "ViewCartTest")
 @Listeners({CustomExcecutionListener.class})
 public class ViewCartTest extends  SeleniumTest {
 
@@ -29,7 +28,7 @@ public class ViewCartTest extends  SeleniumTest {
 
 
 
-    @Test(dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations")
+    @Test(dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations", groups = {"ViewCartTest"})
     @Feature("View Cart")
     @Description("View cart and verify items")
     public void deleteItemAndRestore() throws Exception {
@@ -38,7 +37,7 @@ public class ViewCartTest extends  SeleniumTest {
         viewCartPage.deleteAndRestoreCartItem(1);
     }
 
-    @Test(dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations")
+    @Test(dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations", groups = {"ViewCartTest"})
     @Feature("View Cart")
     @Description("Set quantity of an item to 0")
     public void setQuantityToZero() throws Exception {
@@ -47,7 +46,7 @@ public class ViewCartTest extends  SeleniumTest {
         viewCartPage.setItemQuantityToZeroToDelete(1);
     }
 
-    @Test(dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations")
+    @Test(dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations", groups = {"ViewCartTest"})
     @Feature("View Cart")
     @Description("Delete all items from cart")
     public void deleteAllItemsFromCart() throws Exception {
@@ -56,13 +55,15 @@ public class ViewCartTest extends  SeleniumTest {
         viewCartPage.deleteAllItemsFromCart();
     }
 
-    @Test(dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations")
+    @Test(
+            dependsOnMethods = {"com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"},
+            groups = "NotClearCookies")
     @Feature(("View Cart"))
     @Description("Set initial shipping address")
     public void setShippingAddress() throws Exception {
         driver.get(FrameworkConstants.VIEW_CART_URL);
         ViewCartPage viewCartPage = new ViewCartPage(driver);
-        int rowNumber = 3;
+        int rowNumber = 1;
         viewCartPageData.setExcelFile(TestExcelDataUtils.ORDER_DATA_PATH, TestExcelDataUtils.VIEW_CART_DATA_SHEET);
         viewCartPage.modifyShippingAddress(
                 viewCartPageData.getCellData(TestExcelDataUtils.COUNTRY, rowNumber),
@@ -71,7 +72,7 @@ public class ViewCartTest extends  SeleniumTest {
 
     }
 
-    @Test(dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations", invocationCount = 3)
+    @Test(dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations", invocationCount = 3, groups = {"ViewCartTest"})
     @Feature(("View Cart"))
     @Description("Modify shipping address")
     public void modifyShippingAddress() throws Exception {

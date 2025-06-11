@@ -15,6 +15,9 @@ public class TestExcelDataUtils {
     static public final String CITY = "CITY";
     static public final String DISTRICT = "DISTRICT";
     static public final String COMMUNE = "COMMUNE";
+    static public final String EDIT_CITY= "EDIT_CITY";
+    static public final String EDIT_DISTRICT = "EDIT_DISTRICT";
+    static public final String EDIT_COMMUNE = "EDIT_COMMUNE";
     static public final String DETAIL_ADDRESS = "DETAIL_ADDRESS";
     static public final String NAME = "NAME";
     static public final String PHONE = "PHONE";

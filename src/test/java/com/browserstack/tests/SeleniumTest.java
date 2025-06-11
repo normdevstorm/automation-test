@@ -1,6 +1,8 @@
 package com.browserstack.tests;
 
 import org.openqa.selenium.JavascriptExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.openqa.selenium.WebDriver;
@@ -8,6 +10,7 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
 public class SeleniumTest {
+    private static final Logger log = LoggerFactory.getLogger(SeleniumTest.class);
     public WebDriver driver;
 
     @BeforeMethod(alwaysRun = true, firstTimeOnly = true)
@@ -27,23 +30,25 @@ public class SeleniumTest {
         clearBrowserData();
     }
 
-    @AfterMethod(alwaysRun = true,lastTimeOnly = true, onlyForGroups = {"ViewCartTest", "ChooseItemVariations", "BStackDemoTest", "BStackLocalTest"})
-    public void tearDown() throws Exception {
+    @AfterMethod(lastTimeOnly = true, onlyForGroups =  {"ViewCartTest", "ChooseItemVariations", "BStackDemoTest", "BStackLocalTest", "ClearCookies"})
+    public void clearCookies() throws Exception {
         clearBrowserData();
+    }
+
+    @AfterMethod(alwaysRun = true, lastTimeOnly = true, dependsOnMethods = {"clearCookies"})
+    public void tearDown() throws Exception {
         driver.quit();
     }
 
-    @AfterMethod(onlyForGroups = {"NotClearCookies"})
-    public void tearDownWithoutClearCookies() throws Exception {
-//        clearBrowserData();
-        driver.quit();
-    }
 
     protected void clearBrowserData() {
         if (driver != null) {
             // Clear cookies
             driver.manage().deleteAllCookies();
             // Clear cache and local storage using JavaScript
+            log.info(
+                    "Clearing browser data: cookies, local storage, and session storage."
+            );
             try {
                 // Clear local storage
                 ((JavascriptExecutor) driver).executeScript("window.localStorage.clear();");
