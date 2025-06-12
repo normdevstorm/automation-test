@@ -165,7 +165,7 @@ public class ShippingAndPaymentTest extends SeleniumTest{
     }
 
     @Test(
-            //dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
+//            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
     )
     @Description("Create order with modified district and commune fields")
     public void verifyOrderSucceedsWhenDistrictAndCommuneAreEdited() throws Exception {

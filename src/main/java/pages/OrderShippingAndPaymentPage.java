@@ -45,11 +45,41 @@ public class OrderShippingAndPaymentPage {
     @FindBy(id = "billing_state")
     private WebElement stateDropdown;
 
+    @FindBy(id = "select2-billing_state-results")
+    private WebElement stateDropdownResults;
+
+    @FindBy(id = "billing_state_field")
+    private WebElement stateDropdownField;
+
+    @FindBy(id = "select2-billing_state-container")
+    private WebElement stateDropdownContainer;
+
     @FindBy(id = "billing_city")
     private WebElement districtDropdown;
 
+    @FindBy(id = "select2-billing_city-results")
+    private WebElement districtDropdownResults;
+
+    @FindBy(id = "billing_city_field")
+    private WebElement districtDropdownField;
+
+    @FindBy(id = "select2-billing_city-container")
+    private WebElement districtDropdownContainer;
+
     @FindBy(id = "billing_address_2")
     private WebElement communeDropdown;
+
+    @FindBy(id = "select2-billing_address_2-results")
+    private WebElement communeDropdownResults;
+
+    @FindBy(id = "billing_address_2_field")
+    private WebElement communeDropdownField;
+
+    @FindBy(id = "select2-billing_address_2-container")
+    private WebElement communeDropdownContainer;
+    // Common dropdown search field
+    @FindBy(css = ".select2-search__field")
+    private WebElement addressSearchInput;
 
     @FindBy(id = "order_comments")
     private WebElement orderCommentsInput;
@@ -95,56 +125,72 @@ public class OrderShippingAndPaymentPage {
     public void fillBillingInformation(String name, String phone, String email, String address) {
         log.info("Filling billing information");
         wait.until(ExpectedConditions.visibilityOf(recipientNameInput));
-        if(!recipientNameInput.getAttribute("value").isEmpty()) {
+        if (!recipientNameInput.getAttribute("value").isEmpty()) {
             recipientNameInput.clear();
         }
         recipientNameInput.sendKeys(name);
 
-        if(!phoneNumberInput.getAttribute("value").isEmpty()) {
+        if (!phoneNumberInput.getAttribute("value").isEmpty()) {
             phoneNumberInput.clear();
         }
         phoneNumberInput.sendKeys(phone);
 
-        if(!emailInput.getAttribute("value").isEmpty()) {
+        if (!emailInput.getAttribute("value").isEmpty()) {
             emailInput.clear();
         }
         emailInput.sendKeys(email);
 
-        if(!addressInput.getAttribute("value").isEmpty()) {
+        if (!addressInput.getAttribute("value").isEmpty()) {
             addressInput.clear();
         }
         addressInput.sendKeys(address);
     }
 
     /**
-     * Select state/province from dropdown
+     * Selects an address option from a dropdown
+     *
+     * @param dropdownContainer The dropdown button element
+     * @param dropdownField The dropdown button container element
+     * @param resultsList       The results list element
+     * @param optionText        The text of the option to select
      */
-    public void selectState(String stateValue) {
-        log.info("Selecting state/province: {}", stateValue);
-        Select stateSelect = new Select(wait.until(ExpectedConditions.elementToBeClickable(stateDropdown)));
-        selectByTextContains(stateSelect, stateValue);
-    }
+    private void selectAddressOption(WebElement dropdownContainer, WebElement resultsList, WebElement dropdownField, String optionText) {
+        // Open dropdown
+        log.info("Selecting address option: {}", optionText);
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector(".devvn_loading")));
+        waitForElementToBeInteractive(dropdownField);
+        dropdownField.click();
+        // Enter search text if input field is available
+        try {
+            WebElement searchField = wait.until(ExpectedConditions.visibilityOf(addressSearchInput));
+            searchField.clear();
+            searchField.sendKeys(optionText);
+        } catch (Exception e) {
+            log.debug("Search input not found or not needed for {}", optionText);
+        }
 
-    /**
-     * Select city from dropdown
-     */
-    public void selectDistrict(String districtValue) {
-        log.info("Selecting district: {}", districtValue);
-        Select districtSelect = new Select(wait.until(ExpectedConditions.elementToBeClickable(districtDropdown)));
-        waitForElementToBeInteractive(districtSelect.getWrappedElement());
-        selectByTextContains(districtSelect, districtValue);
-    }
+        // Wait for results to appear
+        wait.until(ExpectedConditions.visibilityOf(resultsList));
 
-    /**
-     * Select district from dropdown
-     */
-    public void selectCommune(String communeValue) {
-        log.info("Selecting commune: {}", communeValue);
-        Select communeSelect = new Select(wait.until(ExpectedConditions.elementToBeClickable(communeDropdown)));
-//        wait.until(driver -> communeSelect.getWrappedElement().findElement(By.xpath("..")).getAttribute("class").contains("devn_loading"));
-//        wait.until(driver -> !communeSelect.getWrappedElement().findElement(By.xpath("..")).getAttribute("class").contains("devn_loading"));
-        waitForElementToBeInteractive(communeSelect.getWrappedElement());
-        selectByTextContains(communeSelect, communeValue);
+        // Find and click the matching option
+        List<WebElement> matchingOptions = resultsList.findElements(By.tagName("li"))
+                .stream()
+                .filter(option -> option.getText().contains(optionText))
+                .collect(Collectors.toList());
+
+        if (!matchingOptions.isEmpty()) {
+            WebElement targetOption = matchingOptions.get(0);
+            wait.until(ExpectedConditions.elementToBeClickable(targetOption)).click();
+            log.debug("Selected option: {}", optionText);
+        } else {
+            log.warn("No address option found matching: {}", optionText);
+        }
+
+        // Wait for dropdown to close and show selected value
+        wait.until(ExpectedConditions.invisibilityOf(addressSearchInput));
+        wait.until(ExpectedConditions.visibilityOf(dropdownContainer));
+        log.debug("Selected value: {}", dropdownContainer.getText());
+        Assert.assertTrue(dropdownContainer.getText().contains(optionText));
     }
 
     /**
@@ -188,14 +234,14 @@ public class OrderShippingAndPaymentPage {
         switch (method.toLowerCase()) {
             case "cod":
                 wait.until(ExpectedConditions.elementToBeClickable(codPaymentOption));
-                if(!codPaymentOption.isSelected()){
+                if (!codPaymentOption.isSelected()) {
                     ((JavascriptExecutor) webDriver).executeScript("arguments[0].click();", codPaymentOption);
 
                 }
                 break;
             case "bank":
                 wait.until(ExpectedConditions.elementToBeClickable(bankTransferPaymentOption));
-                if(!bankTransferPaymentOption.isSelected()){
+                if (!bankTransferPaymentOption.isSelected()) {
                     ((JavascriptExecutor) webDriver).executeScript("arguments[0].click();", bankTransferPaymentOption);
                 }
                 break;
@@ -252,9 +298,12 @@ public class OrderShippingAndPaymentPage {
                                                 String commune, String address,
                                                 String paymentMethod, String comments) {
         fillBillingInformation(name, phone, email, address);
-        selectState(state);
-        selectDistrict(district);
-        selectCommune(commune);
+        selectAddressOption(stateDropdownContainer, stateDropdownResults, stateDropdownField, state);
+
+        selectAddressOption(districtDropdownContainer, districtDropdownResults, districtDropdownField, district);
+
+        selectAddressOption(communeDropdownContainer, communeDropdownResults, communeDropdownField, commune);
+
         addOrderComments(comments);
         selectPaymentMethod(paymentMethod);
         acceptTermsAndConditions();
@@ -262,7 +311,8 @@ public class OrderShippingAndPaymentPage {
         Assert.assertTrue(stateDropdown.getText().contains(state));
         Assert.assertTrue(districtDropdown.getText().contains(district));
         Assert.assertTrue(communeDropdown.getText().contains(commune));
-        Assert.assertTrue(orderCommentsInput.getAttribute("value").contains(comments));        Assert.assertTrue(Objects.equals(paymentMethod, "bank") ? bankTransferPaymentOption.isSelected() : codPaymentOption.isSelected());
+        Assert.assertTrue(orderCommentsInput.getAttribute("value").contains(comments));
+        Assert.assertTrue(Objects.equals(paymentMethod, "bank") ? bankTransferPaymentOption.isSelected() : codPaymentOption.isSelected());
         Assert.assertTrue(termsCheckbox.isSelected());
 
 //        try {
@@ -327,9 +377,12 @@ public class OrderShippingAndPaymentPage {
         fillBillingInformation(name, phone, email, address);
 
         // Step 2: Select location details
-        selectState(state);
-        selectDistrict(district);
-        selectCommune(commune);
+        selectAddressOption(stateDropdownContainer, stateDropdownResults, stateDropdownField, state);
+
+        selectAddressOption(districtDropdownContainer, districtDropdownResults, districtDropdownField, district);
+
+        selectAddressOption(communeDropdownContainer, communeDropdownResults, communeDropdownField, commune);
+
 
         // Step 3: Add order comments
         addOrderComments(comments);
@@ -365,233 +418,239 @@ public class OrderShippingAndPaymentPage {
     }
 
     /**
-         * Negative test: Leave the recipient name field empty and verify error handling.
-         * Steps:
-         *  - Leave 'Họ và Tên' (recipient name) empty
-         *  - Fill other fields with valid data
-         *  - Attempt to place order
-         *  - Assert that the name field is highlighted and error message is shown
-         */
-        public void verifyOrderFailsWhenNameIsEmpty(String phone, String email, String state, String district, String commune, String address, String paymentMethod, String comments) {
-            log.info("Testing negative order scenario: empty recipient name");
-            waitForPageLoaded();
+     * Negative test: Leave the recipient name field empty and verify error handling.
+     * Steps:
+     * - Leave 'Họ và Tên' (recipient name) empty
+     * - Fill other fields with valid data
+     * - Attempt to place order
+     * - Assert that the name field is highlighted and error message is shown
+     */
+    public void verifyOrderFailsWhenNameIsEmpty(String phone, String email, String state, String district, String commune, String address, String paymentMethod, String comments) {
+        log.info("Testing negative order scenario: empty recipient name");
+        waitForPageLoaded();
 
-            // Leave name empty, fill other fields
-            fillBillingInformation("", phone, email, address);
-            selectState(state);
-            selectDistrict(district);
-            selectCommune(commune);
-            addOrderComments(comments);
-            selectPaymentMethod(paymentMethod);
-            acceptTermsAndConditions();
+        // Leave name empty, fill other fields
+        fillBillingInformation("", phone, email, address);
+        selectAddressOption(stateDropdownContainer, stateDropdownResults, stateDropdownField, state);
+        selectAddressOption(districtDropdownContainer, districtDropdownResults, districtDropdownField, district);
+        selectAddressOption(communeDropdownContainer, communeDropdownResults, communeDropdownField, commune);
+        addOrderComments(comments);
+        selectPaymentMethod(paymentMethod);
+        acceptTermsAndConditions();
 
-            // Try to place the order
-            placeOrder();
+        // Try to place the order
+        placeOrder();
 
-            wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper));
+        wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper));
 
-            // Find the parent .form-row.woocommerce-invalid element containing the input
-            String borderColor = recipientNameInput.getCssValue("border-top-color");
-            Assert.assertTrue(borderColor != null && (borderColor.contains(FORM_ERROR_BORDER_COLOR_RBG)), "Name field border is not red");
+        // Find the parent .form-row.woocommerce-invalid element containing the input
+        String borderColor = recipientNameInput.getCssValue("border-top-color");
+        Assert.assertTrue(borderColor != null && (borderColor.contains(FORM_ERROR_BORDER_COLOR_RBG)), "Name field border is not red");
 
-            // Assert: error message is displayed
-            WebElement errorMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                    By.xpath("//ul[@class='woocommerce-error']//li[@data-id='billing_last_name']")));
-            Assert.assertEquals(errorMsg.getText().trim(), FrameworkConstants.NAME_EMPTY_ERROR_MESSAGE, "Expected error message for empty name not displayed");
+        // Assert: error message is displayed
+        WebElement errorMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//ul[@class='woocommerce-error']//li[@data-id='billing_last_name']")));
+        Assert.assertEquals(errorMsg.getText().trim(), FrameworkConstants.NAME_EMPTY_ERROR_MESSAGE, "Expected error message for empty name not displayed");
 
-            log.info("Negative test for empty recipient name completed successfully");
-        }
+        log.info("Negative test for empty recipient name completed successfully");
+    }
 
-            /**
-             * Negative test: Enter only digits in the recipient name field.
-             */
-            public void verifyOrderFailsWhenNameIsAllDigits(String nameOnlyContainNumbers,String phone, String email, String state, String district, String commune, String address, String paymentMethod, String comments) {
-                log.info("Testing negative order scenario: recipient name is all digits");
-                waitForPageLoaded();
-                fillBillingInformation(nameOnlyContainNumbers, phone, email, address);
-                selectState(state);
-                selectDistrict(district);
-                selectCommune(commune);
-                addOrderComments(comments);
-                selectPaymentMethod(paymentMethod);
+    /**
+     * Negative test: Enter only digits in the recipient name field.
+     */
+    public void verifyOrderFailsWhenNameIsAllDigits(String nameOnlyContainNumbers, String phone, String email, String state, String district, String commune, String address, String paymentMethod, String comments) {
+        log.info("Testing negative order scenario: recipient name is all digits");
+        waitForPageLoaded();
+        fillBillingInformation(nameOnlyContainNumbers, phone, email, address);
+        selectAddressOption(stateDropdownContainer, stateDropdownResults, stateDropdownField, state);
+        selectAddressOption(districtDropdownContainer, districtDropdownResults, districtDropdownField, district);
+        selectAddressOption(communeDropdownContainer, communeDropdownResults, communeDropdownField, commune);
+        addOrderComments(comments);
+        selectPaymentMethod(paymentMethod);
 //                acceptTermsAndConditions();
-                placeOrder();
-                wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper));
-                String borderColor = recipientNameInput.getCssValue("border-top-color");
-                Assert.assertTrue(borderColor != null && (borderColor.contains(FORM_ERROR_BORDER_COLOR_RBG)), "Name field border is not red");
-                WebElement errorMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                        By.xpath("//ul[@class='woocommerce-error']//li[@data-id='billing_last_name']")));
-                Assert.assertEquals(errorMsg.getText(), FrameworkConstants.NAME_INVALID_ERROR_MESSAGE, "Expected error message for invalid name not displayed");
-                log.info("Negative test for all-digits recipient name completed successfully");
-            }
+        placeOrder();
+        wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper));
+        String borderColor = recipientNameInput.getCssValue("border-top-color");
+        Assert.assertTrue(borderColor != null && (borderColor.contains(FORM_ERROR_BORDER_COLOR_RBG)), "Name field border is not red");
+        WebElement errorMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//ul[@class='woocommerce-error']//li[@data-id='billing_last_name']")));
+        Assert.assertEquals(errorMsg.getText(), FrameworkConstants.NAME_INVALID_ERROR_MESSAGE, "Expected error message for invalid name not displayed");
+        log.info("Negative test for all-digits recipient name completed successfully");
+    }
 
-            /**
-             * Negative test: Leave the phone number field empty and verify error handling.
-             */
-            public void verifyOrderFailsWhenPhoneIsEmpty(String name, String email, String state, String district, String commune, String address, String paymentMethod, String comments) {
-                log.info("Testing negative order scenario: empty phone number");
-                waitForPageLoaded();
-                fillBillingInformation(name, "", email, address);
-                selectState(state);
-                selectDistrict(district);
-                selectCommune(commune);
-                addOrderComments(comments);
-                selectPaymentMethod(paymentMethod);
-                acceptTermsAndConditions();
-                placeOrder();
-                wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper)).click();
-                String borderColor = phoneNumberInput.getCssValue("border-top-color");
-                Assert.assertTrue(borderColor != null && (borderColor.contains(FORM_ERROR_BORDER_COLOR_RBG)), "Phone field border is not red");
-                WebElement errorMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                        By.xpath("//ul[@class='woocommerce-error']//li[@data-id='billing_phone']")));
-                Assert.assertEquals(errorMsg.getText(), FrameworkConstants.PHONE_EMPTY_ERROR_MESSAGE, "Expected error message for empty phone not displayed");
-                log.info("Negative test for empty phone number completed successfully");
-            }
+    /**
+     * Negative test: Leave the phone number field empty and verify error handling.
+     */
+    public void verifyOrderFailsWhenPhoneIsEmpty(String name, String email, String state, String district, String commune, String address, String paymentMethod, String comments) {
+        log.info("Testing negative order scenario: empty phone number");
+        waitForPageLoaded();
+        fillBillingInformation(name, "", email, address);
+        selectAddressOption(stateDropdownContainer, stateDropdownResults, stateDropdownField, state);
+        selectAddressOption(districtDropdownContainer, districtDropdownResults, districtDropdownField, district);
+        selectAddressOption(communeDropdownContainer, communeDropdownResults, communeDropdownField, commune);
+        addOrderComments(comments);
+        selectPaymentMethod(paymentMethod);
+        acceptTermsAndConditions();
+        placeOrder();
+        wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper)).click();
+        String borderColor = phoneNumberInput.getCssValue("border-top-color");
+        Assert.assertTrue(borderColor != null && (borderColor.contains(FORM_ERROR_BORDER_COLOR_RBG)), "Phone field border is not red");
+        WebElement errorMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//ul[@class='woocommerce-error']//li[@data-id='billing_phone']")));
+        Assert.assertEquals(errorMsg.getText(), FrameworkConstants.PHONE_EMPTY_ERROR_MESSAGE, "Expected error message for empty phone not displayed");
+        log.info("Negative test for empty phone number completed successfully");
+    }
 
-            /**
-             * Negative test: Enter invalid characters in the phone number field.
-             */
-            public void verifyOrderFailsWhenPhoneIsInvalid(String name, String invalidPhone, String email, String state, String district, String commune, String address, String paymentMethod, String comments) {
-                log.info("Testing negative order scenario: invalid phone number");
-                waitForPageLoaded();
-                // Example: "abc123😊"
-                fillBillingInformation(name,invalidPhone , email, address);
-                selectState(state);
-                selectDistrict(district);
-                selectCommune(commune);
-                addOrderComments(comments);
-                selectPaymentMethod(paymentMethod);
+    /**
+     * Negative test: Enter invalid characters in the phone number field.
+     */
+    public void verifyOrderFailsWhenPhoneIsInvalid(String name, String invalidPhone, String email, String state, String district, String commune, String address, String paymentMethod, String comments) {
+        log.info("Testing negative order scenario: invalid phone number");
+        waitForPageLoaded();
+        // Example: "abc123😊"
+        fillBillingInformation(name, invalidPhone, email, address);
+        selectAddressOption(stateDropdownContainer, stateDropdownResults, stateDropdownField, state);
+        selectAddressOption(districtDropdownContainer, districtDropdownResults, districtDropdownField, district);
+        selectAddressOption(communeDropdownContainer, communeDropdownResults, communeDropdownField, commune);
+        addOrderComments(comments);
+        selectPaymentMethod(paymentMethod);
 //                acceptTermsAndConditions();
-                placeOrder();
-                wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper));
-                String borderColor = phoneNumberInput.getCssValue("border-top-color");
-                Assert.assertTrue(borderColor != null && (borderColor.contains(FORM_ERROR_BORDER_COLOR_RBG)), "Phone field border is not red");
-                WebElement errorMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                        By.xpath("//ul[@class='woocommerce-error']//li[@data-id='billing_phone']")));
-                Assert.assertEquals(errorMsg.getText(), FrameworkConstants.PHONE_INVALID_ERROR_MESSAGE, "Expected error message for invalid phone not displayed");
-                log.info("Negative test for invalid phone number completed successfully");
-            }
+        placeOrder();
+        wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper));
+        String borderColor = phoneNumberInput.getCssValue("border-top-color");
+        Assert.assertTrue(borderColor != null && (borderColor.contains(FORM_ERROR_BORDER_COLOR_RBG)), "Phone field border is not red");
+        WebElement errorMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//ul[@class='woocommerce-error']//li[@data-id='billing_phone']")));
+        Assert.assertEquals(errorMsg.getText(), FrameworkConstants.PHONE_INVALID_ERROR_MESSAGE, "Expected error message for invalid phone not displayed");
+        log.info("Negative test for invalid phone number completed successfully");
+    }
 
-            /**
-             * Positive test: Leave the email field empty and verify order can be placed.
-             */
-            public void verifyOrderSucceedsWhenEmailIsEmpty(String name, String phone, String state, String district, String commune, String address, String paymentMethod, String comments) {
-                log.info("Testing positive order scenario: empty email");
-                waitForPageLoaded();
-                fillBillingInformation(name, phone, "", address);
-                selectState(state);
-                selectDistrict(district);
-                selectCommune(commune);
-                addOrderComments(comments);
-                selectPaymentMethod(paymentMethod);
+    /**
+     * Positive test: Leave the email field empty and verify order can be placed.
+     */
+    public void verifyOrderSucceedsWhenEmailIsEmpty(String name, String phone, String state, String district, String commune, String address, String paymentMethod, String comments) {
+        log.info("Testing positive order scenario: empty email");
+        waitForPageLoaded();
+        fillBillingInformation(name, phone, "", address);
+        selectAddressOption(stateDropdownContainer, stateDropdownResults, stateDropdownField, state);
+        selectAddressOption(districtDropdownContainer, districtDropdownResults, districtDropdownField, district);
+        selectAddressOption(communeDropdownContainer, communeDropdownResults, communeDropdownField, commune);
+        addOrderComments(comments);
+        selectPaymentMethod(paymentMethod);
 //                acceptTermsAndConditions();
-                placeOrder();
-                wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper));
+        placeOrder();
+        wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper));
 //                Assert.assertTrue(isOrderConfirmed(), "Order should be placed successfully with empty email");
-                log.info("Positive test for empty email completed successfully");
-            }
+        log.info("Positive test for empty email completed successfully");
+    }
 
-            /**
-             * Negative test: Enter invalid email format and verify error handling.
-             */
-            public void verifyOrderFailsWhenEmailIsInvalid(String name, String phone,String invalidEmail, String state, String district, String commune, String address, String paymentMethod, String comments) {
-                log.info("Testing negative order scenario: invalid email format");
-                waitForPageLoaded();
-                fillBillingInformation(name, phone, invalidEmail, address);
-                selectState(state);
-                selectDistrict(district);
-                selectCommune(commune);
-                addOrderComments(comments);
-                selectPaymentMethod(paymentMethod);
-                acceptTermsAndConditions();
-                placeOrder();
-                wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper));
-                String borderColor = emailInput.getCssValue("border-top-color");
-                Assert.assertTrue(borderColor != null && (borderColor.contains(FORM_ERROR_BORDER_COLOR_RBG)), "Email field border is not red");
-                WebElement errorMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                        By.xpath("//ul[@class='woocommerce-error']//li[contains(text(), 'Địa chỉ email thanh toán không hợp lệ')]")));
-                Assert.assertTrue(errorMsg.isDisplayed(), "Expected error message for invalid email not displayed");
-                log.info("Negative test for invalid email completed successfully");
-            }
+    /**
+     * Negative test: Enter invalid email format and verify error handling.
+     */
+    public void verifyOrderFailsWhenEmailIsInvalid(String name, String phone, String invalidEmail, String state, String district, String commune, String address, String paymentMethod, String comments) {
+        log.info("Testing negative order scenario: invalid email format");
+        waitForPageLoaded();
+        fillBillingInformation(name, phone, invalidEmail, address);
+        selectAddressOption(stateDropdownContainer, stateDropdownResults, stateDropdownField, state);
+        selectAddressOption(districtDropdownContainer, districtDropdownResults, districtDropdownField, district);
+        selectAddressOption(communeDropdownContainer, communeDropdownResults, communeDropdownField, commune);
+        addOrderComments(comments);
+        selectPaymentMethod(paymentMethod);
+        acceptTermsAndConditions();
+        placeOrder();
+        wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper));
+        String borderColor = emailInput.getCssValue("border-top-color");
+        Assert.assertTrue(borderColor != null && (borderColor.contains(FORM_ERROR_BORDER_COLOR_RBG)), "Email field border is not red");
+        WebElement errorMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//ul[@class='woocommerce-error']//li[contains(text(), 'Địa chỉ email thanh toán không hợp lệ')]")));
+        Assert.assertTrue(errorMsg.isDisplayed(), "Expected error message for invalid email not displayed");
+        log.info("Negative test for invalid email completed successfully");
+    }
 
 
-                /**
-                 * Positive test: Edit district and commune fields after initial valid entry.
-                 */
-                public void verifyOrderSucceedsWhenDistrictAndCommuneAreEdited(String name, String phone, String email, String state, String initialDistrict, String initialCommune, String newDistrict, String newCommune, String address, String paymentMethod, String comments) {
-                    log.info("Testing positive order scenario: edit district and commune fields");
-                    waitForPageLoaded();
-                    fillBillingInformation(name, phone, email, address);
-                    selectState(state);
-
-                    selectDistrict(initialDistrict);
-                    selectCommune(initialCommune);
-                    // Edit district and commune
-                    selectDistrict(newDistrict);
-                    selectCommune(newCommune);
-                    addOrderComments(comments);
-                    selectPaymentMethod(paymentMethod);
+    /**
+     * Positive test: Edit district and commune fields after initial valid entry.
+     */
+    public void verifyOrderSucceedsWhenDistrictAndCommuneAreEdited(String name, String phone, String email, String state, String initialDistrict, String initialCommune, String newDistrict, String newCommune, String address, String paymentMethod, String comments) {
+        log.info("Testing positive order scenario: edit district and commune fields");
+        waitForPageLoaded();
+        fillBillingInformation(name, phone, email, address);
+        selectAddressOption(stateDropdownContainer, stateDropdownResults, stateDropdownField, state);
+        selectAddressOption(districtDropdownContainer, districtDropdownResults, districtDropdownField, initialDistrict);
+        selectAddressOption(communeDropdownContainer, communeDropdownResults, communeDropdownField, initialCommune);
+        // Edit district and commune
+        selectAddressOption(stateDropdownContainer, stateDropdownResults, stateDropdownField, "Hà Tĩnh");
+        selectAddressOption(districtDropdownContainer, districtDropdownResults, districtDropdownField, newDistrict);
+        selectAddressOption(communeDropdownContainer, communeDropdownResults, communeDropdownField, newCommune);
+        addOrderComments(comments);
+        selectPaymentMethod(paymentMethod);
 //                    acceptTermsAndConditions();
 
-                    Assert.assertTrue(districtDropdown.getText().contains(newDistrict), "District was not updated correctly");
-                    Assert.assertTrue(communeDropdown.getText().contains(newCommune), "Commune was not updated correctly");
-                    placeOrder();
-                    log.info("Positive test for editing district and commune completed successfully");
-                }
+        Assert.assertTrue(districtDropdown.getText().contains(newDistrict), "District was not updated correctly");
+        Assert.assertTrue(communeDropdown.getText().contains(newCommune), "Commune was not updated correctly");
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        placeOrder();
+        log.info("Positive test for editing district and commune completed successfully");
+    }
 
-                /**
-                 * Negative test: Leave district, commune, and address fields empty and verify error handling.
-                 */
-                public void verifyOrderFailsWhenDistrictCommuneAndAddressAreEmpty(String name, String phone, String email, String state, String paymentMethod, String comments) {
-                    log.info("Testing negative order scenario: empty district, commune, and address");
-                    waitForPageLoaded();
-                    fillBillingInformation(name, phone, email, "");
-                    selectState(state);
-                    // Do not select district or commune
-                    addOrderComments(comments);
-                    selectPaymentMethod(paymentMethod);
-                    acceptTermsAndConditions();
-                    placeOrder();
-                    wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper));
-                    String districtBorder = districtDropdown.getCssValue("border-top-color");
-                    String communeBorder = communeDropdown.getCssValue("border-top-color");
-                    String addressBorder = addressInput.getCssValue("border-top-color");
-                    Assert.assertTrue(districtBorder != null && districtBorder.contains(FORM_ERROR_BORDER_COLOR_RBG), "District field border is not red");
-                    Assert.assertTrue(communeBorder != null && communeBorder.contains(FORM_ERROR_BORDER_COLOR_RBG), "Commune field border is not red");
-                    Assert.assertTrue(addressBorder != null && addressBorder.contains(FORM_ERROR_BORDER_COLOR_RBG), "Address field border is not red");
-                    WebElement districtError = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                            By.xpath("//ul[@class='woocommerce-error']//li[contains(text(), 'Mục Quận/Huyện: là mục bắt buộc.')]")));
-                    WebElement communeError = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                            By.xpath("//ul[@class='woocommerce-error']//li[contains(text(), 'Mục Xã/Phường: là mục bắt buộc.')]")));
-                    WebElement addressError = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                            By.xpath("//ul[@class='woocommerce-error']//li[contains(text(), 'Mục Địa chỉ: là mục bắt buộc.')]")));
-                    Assert.assertTrue(districtError.isDisplayed(), "District required error not displayed");
-                    Assert.assertTrue(communeError.isDisplayed(), "Commune required error not displayed");
-                    Assert.assertTrue(addressError.isDisplayed(), "Address required error not displayed");
-                    log.info("Negative test for empty district, commune, and address completed successfully");
-                }
+    /**
+     * Negative test: Leave district, commune, and address fields empty and verify error handling.
+     */
+    public void verifyOrderFailsWhenDistrictCommuneAndAddressAreEmpty(String name, String phone, String email, String state, String paymentMethod, String comments) {
+        log.info("Testing negative order scenario: empty district, commune, and address");
+        waitForPageLoaded();
+        fillBillingInformation(name, phone, email, "");
+        selectAddressOption(stateDropdownContainer, stateDropdownResults, stateDropdownField, state);
 
-                /**
-                 * Negative test: Do not check Terms and Conditions and verify error handling.
-                 */
-                public void verifyOrderFailsWhenTermsNotChecked(String name, String phone, String email, String state, String district, String commune, String address, String paymentMethod, String comments) {
-                    log.info("Testing negative order scenario: terms and conditions not checked");
-                    waitForPageLoaded();
-                    fillBillingInformation(name, phone, email, address);
-                    selectState(state);
-                    selectDistrict(district);
-                    selectCommune(commune);
-                    addOrderComments(comments);
-                    selectPaymentMethod(paymentMethod);
-                    // Do not accept terms and conditions
-                    placeOrder();
-                    wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper));
-                    String termsBorder = termsCheckbox.getCssValue("border-top-color");
-                    Assert.assertTrue(termsBorder != null && termsBorder.contains(FORM_ERROR_BORDER_COLOR_RBG), "Terms checkbox border is not red");
-                    WebElement termsError = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                            By.xpath("//ul[@class='woocommerce-error']//li[contains(text(), 'Vui lòng đọc và đồng ý điều khoản và điều kiện để tiếp tục đặt hàng.')]")));
-                    Assert.assertTrue(termsError.isDisplayed(), "Terms and conditions error not displayed");
-                    log.info("Negative test for terms and conditions not checked completed successfully");
-                }
+        // Do not select district or commune
+        addOrderComments(comments);
+        selectPaymentMethod(paymentMethod);
+        acceptTermsAndConditions();
+        placeOrder();
+        wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper));
+        String districtBorder = districtDropdown.getCssValue("border-top-color");
+        String communeBorder = communeDropdown.getCssValue("border-top-color");
+        String addressBorder = addressInput.getCssValue("border-top-color");
+        Assert.assertTrue(districtBorder != null && districtBorder.contains(FORM_ERROR_BORDER_COLOR_RBG), "District field border is not red");
+        Assert.assertTrue(communeBorder != null && communeBorder.contains(FORM_ERROR_BORDER_COLOR_RBG), "Commune field border is not red");
+        Assert.assertTrue(addressBorder != null && addressBorder.contains(FORM_ERROR_BORDER_COLOR_RBG), "Address field border is not red");
+        WebElement districtError = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//ul[@class='woocommerce-error']//li[contains(text(), 'Mục Quận/Huyện: là mục bắt buộc.')]")));
+        WebElement communeError = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//ul[@class='woocommerce-error']//li[contains(text(), 'Mục Xã/Phường: là mục bắt buộc.')]")));
+        WebElement addressError = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//ul[@class='woocommerce-error']//li[contains(text(), 'Mục Địa chỉ: là mục bắt buộc.')]")));
+        Assert.assertTrue(districtError.isDisplayed(), "District required error not displayed");
+        Assert.assertTrue(communeError.isDisplayed(), "Commune required error not displayed");
+        Assert.assertTrue(addressError.isDisplayed(), "Address required error not displayed");
+        log.info("Negative test for empty district, commune, and address completed successfully");
+    }
+
+    /**
+     * Negative test: Do not check Terms and Conditions and verify error handling.
+     */
+    public void verifyOrderFailsWhenTermsNotChecked(String name, String phone, String email, String state, String district, String commune, String address, String paymentMethod, String comments) {
+        log.info("Testing negative order scenario: terms and conditions not checked");
+        waitForPageLoaded();
+        fillBillingInformation(name, phone, email, address);
+        selectAddressOption(stateDropdownContainer, stateDropdownResults, stateDropdownField, state);
+        selectAddressOption(districtDropdownContainer, districtDropdownResults, districtDropdownField, district);
+        selectAddressOption(communeDropdownContainer, communeDropdownResults, communeDropdownField, commune);
+        addOrderComments(comments);
+        selectPaymentMethod(paymentMethod);
+        // Do not accept terms and conditions
+        placeOrder();
+        wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper));
+        String termsBorder = termsCheckbox.getCssValue("border-top-color");
+        Assert.assertTrue(termsBorder != null && termsBorder.contains(FORM_ERROR_BORDER_COLOR_RBG), "Terms checkbox border is not red");
+        WebElement termsError = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//ul[@class='woocommerce-error']//li[contains(text(), 'Vui lòng đọc và đồng ý điều khoản và điều kiện để tiếp tục đặt hàng.')]")));
+        Assert.assertTrue(termsError.isDisplayed(), "Terms and conditions error not displayed");
+        log.info("Negative test for terms and conditions not checked completed successfully");
+    }
 }
 
