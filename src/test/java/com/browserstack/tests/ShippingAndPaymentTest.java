@@ -4,8 +4,10 @@ import com.browserstack.common.ExcelHelpers;
 import constants.FrameworkConstants;
 import constants.TestExcelDataUtils;
 import io.qameta.allure.Description;
+import org.openqa.selenium.WebDriver;
 import org.testng.annotations.Test;
 import pages.OrderShippingAndPaymentPage;
+import utils.DriverManager;
 
 import static constants.TestExcelDataUtils.*;
 
@@ -15,7 +17,7 @@ public class ShippingAndPaymentTest extends SeleniumTest{
 
    @Test(dependsOnMethods = {
               "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations",
-           "com.browserstack.tests.ViewCartTest.setShippingAddress"}, groups = {"ClearCookies"})
+           "com.browserstack.tests.ViewCartTest.setShippingAddress"}, groups = {"ClearCookies"}, skipFailedInvocations = true)
     public void createOrderWithAllValidData() throws Exception {
        OrderShippingAndPaymentPage orderShippingAndPaymentPage = new OrderShippingAndPaymentPage(driver);
        driver.get(FrameworkConstants.SHIPMENT_AND_PAYMENT_URL);
@@ -36,7 +38,8 @@ public class ShippingAndPaymentTest extends SeleniumTest{
     }
 
     @Test(
-//            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
+            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations",
+            groups = {"ShippingAndPaymentTest"}
     )
     @Description("Create order with empty name field")
     public void createOrderWithEmptyName() throws Exception {
@@ -57,7 +60,7 @@ public class ShippingAndPaymentTest extends SeleniumTest{
     }
 
     @Test(
-//            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
+            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
     )
     @Description("Create order with invalid name field")
     public void verifyOrderFailsWhenNameIsAllDigits() throws Exception {
@@ -79,7 +82,7 @@ public class ShippingAndPaymentTest extends SeleniumTest{
     }
 
     @Test(
-            //dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
+            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
     )
     @Description("Create order with empty phone field")
     public void verifyOrderFailsWhenPhoneIsEmpty() throws Exception {
@@ -100,14 +103,14 @@ public class ShippingAndPaymentTest extends SeleniumTest{
     }
 
     @Test(
-            //dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
+//            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
     )
     @Description("Create order with invalid phone field")
     public void verifyOrderFailsWhenPhoneIsInvalid() throws Exception {
         OrderShippingAndPaymentPage orderShippingAndPaymentPage = new OrderShippingAndPaymentPage(driver);
         driver.get(FrameworkConstants.SHIPMENT_AND_PAYMENT_URL);
         shippingAndPaymentData.setExcelFile(TestExcelDataUtils.ORDER_DATA_PATH,TestExcelDataUtils.SHIPMENT_PAYMENT_DATA_SHEET);
-        int recordNumber = 8; // Record number in the Excel file to be used for this test
+        int recordNumber = 7; // Record number in the Excel file to be used for this test
         orderShippingAndPaymentPage.verifyOrderFailsWhenPhoneIsInvalid(
                 shippingAndPaymentData.getCellData(NAME,recordNumber),
                 shippingAndPaymentData.getCellData(PHONE,recordNumber),
@@ -122,7 +125,7 @@ public class ShippingAndPaymentTest extends SeleniumTest{
     }
 
     @Test(
-            //dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
+            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
     )
     @Description("Create order with empty email field")
     public void verifyOrderSucceedsWhenEmailIsEmpty() throws Exception {
@@ -143,7 +146,7 @@ public class ShippingAndPaymentTest extends SeleniumTest{
     }
 
     @Test(
-            //dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
+            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
     )
     @Description("Create order with invalid email field")
     public void verifyOrderFailsWhenEmailIsInvalid() throws Exception {
@@ -165,7 +168,7 @@ public class ShippingAndPaymentTest extends SeleniumTest{
     }
 
     @Test(
-//            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
+            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations", groups = {"ClearCookies"}
     )
     @Description("Create order with modified district and commune fields")
     public void verifyOrderSucceedsWhenDistrictAndCommuneAreEdited() throws Exception {
@@ -188,4 +191,44 @@ public class ShippingAndPaymentTest extends SeleniumTest{
         );
     }
 
+    @Test(
+//            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
+    )
+    @Description("Create order with all address fields empty")
+    public void verifyOrderFailsWhenDistrictCommuneAndAddressAreEmpty() throws Exception {
+        OrderShippingAndPaymentPage orderShippingAndPaymentPage = new OrderShippingAndPaymentPage(driver);
+        driver.get(FrameworkConstants.SHIPMENT_AND_PAYMENT_URL);
+        shippingAndPaymentData.setExcelFile(TestExcelDataUtils.ORDER_DATA_PATH,TestExcelDataUtils.SHIPMENT_PAYMENT_DATA_SHEET);
+        int recordNumber = 11; // Record number in the Excel file to be used for this test
+        orderShippingAndPaymentPage.verifyOrderFailsWhenDistrictCommuneAndAddressAreEmpty(
+                shippingAndPaymentData.getCellData(NAME,recordNumber),
+                shippingAndPaymentData.getCellData(PHONE,recordNumber),
+                shippingAndPaymentData.getCellData(EMAIL,recordNumber),
+                shippingAndPaymentData.getCellData(CITY,recordNumber),
+                shippingAndPaymentData.getCellData(PAYMENT_METHOD,recordNumber),
+                shippingAndPaymentData.getCellData(COMMENT,recordNumber)
+        );
+    }
+
+    @Test(
+            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations", groups = {"ClearCookies"}
+    )
+    @Description("Create order without checking the terms and conditions checkbox")
+    public void verifyOrderFailsWhenTermsAndConditionsNotChecked() throws Exception {
+        OrderShippingAndPaymentPage orderShippingAndPaymentPage = new OrderShippingAndPaymentPage(driver);
+        driver.get(FrameworkConstants.SHIPMENT_AND_PAYMENT_URL);
+        shippingAndPaymentData.setExcelFile(TestExcelDataUtils.ORDER_DATA_PATH,TestExcelDataUtils.SHIPMENT_PAYMENT_DATA_SHEET);
+        int recordNumber = 12; // Record number in the Excel file to be used for this test
+        orderShippingAndPaymentPage.verifyOrderFailsWhenTermsNotChecked(
+                shippingAndPaymentData.getCellData(NAME,recordNumber),
+                shippingAndPaymentData.getCellData(PHONE,recordNumber),
+                shippingAndPaymentData.getCellData(EMAIL,recordNumber),
+                shippingAndPaymentData.getCellData(CITY,recordNumber),
+                shippingAndPaymentData.getCellData(DISTRICT,recordNumber),
+                shippingAndPaymentData.getCellData(COMMUNE,recordNumber),
+                shippingAndPaymentData.getCellData(DETAIL_ADDRESS,recordNumber),
+                shippingAndPaymentData.getCellData(PAYMENT_METHOD,recordNumber),
+                shippingAndPaymentData.getCellData(COMMENT,recordNumber)
+        );
+    }
 }

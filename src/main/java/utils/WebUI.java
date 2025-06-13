@@ -15,8 +15,8 @@ public class WebUI {
      * Wait for a page to load with the default time from the config
      */
     public static void waitForPageLoaded() {
-        WebDriverWait wait = new WebDriverWait(DriverManager.getDriver(), Duration.ofSeconds(FrameworkConstants.WAIT_PAGE_LOADED));
-        JavascriptExecutor js = (JavascriptExecutor) DriverManager.getDriver();
+        WebDriverWait wait = new WebDriverWait(DriverManager.getInstance().getDriver(), Duration.ofSeconds(FrameworkConstants.WAIT_PAGE_LOADED));
+        JavascriptExecutor js = (JavascriptExecutor) DriverManager.getInstance().getDriver();
 
         // wait for Javascript to loaded
         ExpectedCondition<Boolean> jsLoad = driver -> ((JavascriptExecutor) driver).executeScript("return document.readyState").toString().equals("complete");
@@ -41,8 +41,8 @@ public class WebUI {
      * Wait for a page to load within the given time (in seconds)
      */
     public static void waitForPageLoaded(int timeOut) {
-        WebDriverWait wait = new WebDriverWait(DriverManager.getDriver(), Duration.ofSeconds(timeOut));
-        JavascriptExecutor js = (JavascriptExecutor) DriverManager.getDriver();
+        WebDriverWait wait = new WebDriverWait(DriverManager.getInstance().getDriver(), Duration.ofSeconds(timeOut));
+        JavascriptExecutor js = (JavascriptExecutor) DriverManager.getInstance().getDriver();
 
         // wait for Javascript to loaded
         ExpectedCondition<Boolean> jsLoad = driver -> ((JavascriptExecutor) driver).executeScript("return document.readyState").toString().equals("complete");

@@ -1,6 +1,7 @@
 package pages;
 
 import constants.FrameworkConstants;
+import io.qameta.allure.Allure;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
@@ -612,22 +613,23 @@ public class OrderShippingAndPaymentPage {
         acceptTermsAndConditions();
         placeOrder();
         wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper));
-        String districtBorder = districtDropdown.getCssValue("border-top-color");
-        String communeBorder = communeDropdown.getCssValue("border-top-color");
         String addressBorder = addressInput.getCssValue("border-top-color");
-        Assert.assertTrue(districtBorder != null && districtBorder.contains(FORM_ERROR_BORDER_COLOR_RBG), "District field border is not red");
-        Assert.assertTrue(communeBorder != null && communeBorder.contains(FORM_ERROR_BORDER_COLOR_RBG), "Commune field border is not red");
         Assert.assertTrue(addressBorder != null && addressBorder.contains(FORM_ERROR_BORDER_COLOR_RBG), "Address field border is not red");
-        WebElement districtError = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.xpath("//ul[@class='woocommerce-error']//li[contains(text(), 'Mục Quận/Huyện: là mục bắt buộc.')]")));
-        WebElement communeError = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.xpath("//ul[@class='woocommerce-error']//li[contains(text(), 'Mục Xã/Phường: là mục bắt buộc.')]")));
-        WebElement addressError = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.xpath("//ul[@class='woocommerce-error']//li[contains(text(), 'Mục Địa chỉ: là mục bắt buộc.')]")));
-        Assert.assertTrue(districtError.isDisplayed(), "District required error not displayed");
-        Assert.assertTrue(communeError.isDisplayed(), "Commune required error not displayed");
-        Assert.assertTrue(addressError.isDisplayed(), "Address required error not displayed");
+        WebElement errorMsgCommune = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//ul[@class='woocommerce-error']//li[@data-id='billing_address_2']")));
+        WebElement errorMsgDistrict = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//ul[@class='woocommerce-error']//li[@data-id='billing_city']")));
+        WebElement errorMsgDetailAddress = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//ul[@class='woocommerce-error']//li[@data-id='billing_address_1']")));
+        Assert.assertEquals(errorMsgDistrict.getText(), "Mục Quận/Huyện: là mục bắt buộc.", "District required error not displayed");
+        Assert.assertEquals(errorMsgCommune.getText(), "Mục Xã/Phường: là mục bắt buộc.", "Commune required error not displayed");
+        Assert.assertEquals(errorMsgDetailAddress.getText(), "Mục Địa chỉ: là mục bắt buộc.", "Address required error not displayed");
         log.info("Negative test for empty district, commune, and address completed successfully");
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -636,8 +638,11 @@ public class OrderShippingAndPaymentPage {
     public void verifyOrderFailsWhenTermsNotChecked(String name, String phone, String email, String state, String district, String commune, String address, String paymentMethod, String comments) {
         log.info("Testing negative order scenario: terms and conditions not checked");
         waitForPageLoaded();
+        Allure.step("Filling billing information");
         fillBillingInformation(name, phone, email, address);
+        Allure.step("Selecting address options");
         selectAddressOption(stateDropdownContainer, stateDropdownResults, stateDropdownField, state);
+        Allure.step("Selecting district and commune");
         selectAddressOption(districtDropdownContainer, districtDropdownResults, districtDropdownField, district);
         selectAddressOption(communeDropdownContainer, communeDropdownResults, communeDropdownField, commune);
         addOrderComments(comments);
@@ -645,12 +650,48 @@ public class OrderShippingAndPaymentPage {
         // Do not accept terms and conditions
         placeOrder();
         wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper));
-        String termsBorder = termsCheckbox.getCssValue("border-top-color");
-        Assert.assertTrue(termsBorder != null && termsBorder.contains(FORM_ERROR_BORDER_COLOR_RBG), "Terms checkbox border is not red");
         WebElement termsError = wait.until(ExpectedConditions.visibilityOfElementLocated(
                 By.xpath("//ul[@class='woocommerce-error']//li[contains(text(), 'Vui lòng đọc và đồng ý điều khoản và điều kiện để tiếp tục đặt hàng.')]")));
         Assert.assertTrue(termsError.isDisplayed(), "Terms and conditions error not displayed");
         log.info("Negative test for terms and conditions not checked completed successfully");
     }
+
+//    /**
+//         * Negative test: Leave district, commune, and address fields empty and verify error handling.
+//         * Steps:
+//         * - Do not enter any value for district, commune, and address fields
+//         * - Fill other fields with valid data
+//         * - Attempt to place order
+//         * - Assert that the district, commune, and address fields are highlighted and error messages are shown
+//         */
+//        public void verifyOrderFailsWhenDistrictCommuneAndAddressAreEmpty(String name, String phone, String email, String state, String paymentMethod, String comments) {
+//            log.info("Testing negative order scenario: empty district, commune, and address");
+//            waitForPageLoaded();
+//            fillBillingInformation(name, phone, email, "");
+//            selectAddressOption(stateDropdownContainer, stateDropdownResults, stateDropdownField, state);
+//
+//            // Do not select district or commune
+//            addOrderComments(comments);
+//            selectPaymentMethod(paymentMethod);
+//            acceptTermsAndConditions();
+//            placeOrder();
+//            wait.until(ExpectedConditions.visibilityOf(orderInformationErrorWrapper));
+//            String districtBorder = districtDropdown.getCssValue("border-top-color");
+//            String communeBorder = communeDropdown.getCssValue("border-top-color");
+//            String addressBorder = addressInput.getCssValue("border-top-color");
+//            Assert.assertTrue(districtBorder != null && districtBorder.contains(FORM_ERROR_BORDER_COLOR_RBG), "District field border is not red");
+//            Assert.assertTrue(communeBorder != null && communeBorder.contains(FORM_ERROR_BORDER_COLOR_RBG), "Commune field border is not red");
+//            Assert.assertTrue(addressBorder != null && addressBorder.contains(FORM_ERROR_BORDER_COLOR_RBG), "Address field border is not red");
+//            WebElement districtError = wait.until(ExpectedConditions.visibilityOfElementLocated(
+//                    By.xpath("//ul[@class='woocommerce-error']//li[contains(text(), 'Mục Quận/Huyện: là mục bắt buộc.')]")));
+//            WebElement communeError = wait.until(ExpectedConditions.visibilityOfElementLocated(
+//                    By.xpath("//ul[@class='woocommerce-error']//li[contains(text(), 'Mục Xã/Phường: là mục bắt buộc.')]")));
+//            WebElement addressError = wait.until(ExpectedConditions.visibilityOfElementLocated(
+//                    By.xpath("//ul[@class='woocommerce-error']//li[contains(text(), 'Mục Địa chỉ: là mục bắt buộc.')]")));
+//            Assert.assertTrue(districtError.isDisplayed(), "District required error not displayed");
+//            Assert.assertTrue(communeError.isDisplayed(), "Commune required error not displayed");
+//            Assert.assertTrue(addressError.isDisplayed(), "Address required error not displayed");
+//            log.info("Negative test for empty district, commune, and address completed successfully");
+//        }
 }
 

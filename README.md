@@ -79,7 +79,7 @@ This repository uses the BrowserStack SDK to run tests on BrowserStack. Follow t
 
 * Following are the changes required in `gradle.build` -
     * Add `compileOnly 'com.browserstack:browserstack-java-sdk:latest.release'` in dependencies
-    * Fetch Artifact Information and add `jvmArgs` property in tasks *SampleTest* and *SampleLocalTest* :
+    * Fetch Artifact Information and add `jvmArgs` property in tasks *SampleTest* and *SampleLocalTethrow new RuntimeException(e);st* :
   ```
   def browserstackSDKArtifact = configurations.compileClasspath.resolvedConfiguration.resolvedArtifacts.find { it.name == 'browserstack-java-sdk' }
   

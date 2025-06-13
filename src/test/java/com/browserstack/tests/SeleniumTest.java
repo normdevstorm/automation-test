@@ -3,40 +3,38 @@ package com.browserstack.tests;
 import org.openqa.selenium.JavascriptExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.*;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
+import utils.DriverManager;
 
 public class SeleniumTest {
     private static final Logger log = LoggerFactory.getLogger(SeleniumTest.class);
-    public WebDriver driver;
+    public static WebDriver driver;
+
+    @BeforeSuite(alwaysRun = true)
+    @SuppressWarnings("unchecked")
+    public void beforeSuite() {
+        log.info("Starting Selenium Test Suite");
+        String browser = "chrome";
+        DriverManager.setDriverBrowser(browser);
+    }
 
     @BeforeMethod(alwaysRun = true, firstTimeOnly = true)
     @SuppressWarnings("unchecked")
     public void setUp() throws Exception {
-//        System.setProperty("webdriver.chrome.driver", "/run/media/normdevstorm/data-linux/UNI/AUTOMATED_TESTING/chromedriver-linux64/chromedriver");
-        ChromeOptions options = new ChromeOptions();
-        // Add your custom profile
-        options.addArguments("user-data-dir=/home/normdevstorm/.config/chromium/Default");
+        driver = DriverManager.getInstance().getDriver();
+//        clearBrowserData();
 
-        // Add memory-efficient options
-        options.addArguments("--disable-dev-shm-usage");
-        options.addArguments("--no-sandbox");
-        options.addArguments("start-maximized");
-        options.addArguments("--remote-allow-origins=*");
-        driver = new ChromeDriver(options);
-        clearBrowserData();
-    }
+        }
 
     @AfterMethod(lastTimeOnly = true, onlyForGroups =  {"ViewCartTest", "ChooseItemVariations", "BStackDemoTest", "BStackLocalTest", "ClearCookies"})
     public void clearCookies() throws Exception {
-        clearBrowserData();
+//        clearBrowserData();
     }
 
-    @AfterMethod(alwaysRun = true, lastTimeOnly = true, dependsOnMethods = {"clearCookies"})
+    @AfterMethod(alwaysRun = true, lastTimeOnly = true, onlyForGroups = {"clearCookies"})
     public void tearDown() throws Exception {
+        driver = DriverManager.getInstance().getDriver();
         driver.quit();
     }
 
@@ -59,5 +57,14 @@ public class SeleniumTest {
             }
         }
     }
+
+    // To quit driver after all tests run
+    // This will run only once, after all tests ran
+    // Another advantage of this is, it will quit driver even though you stop the program manually
+//    static {
+//        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+//            DriverManager.getInstance().getDriver().quit();
+//        }));
+//    }
 
 }

@@ -30,10 +30,10 @@ framework: testng
 # Platforms object contains all the browser / device combinations you want to test on.
 # Entire list available here -> (https://www.browserstack.com/list-of-browsers-and-platforms/automate)
 platforms:
-#  - os: OS X
-#    osVersion: Big Sur
-#    browserName: Chrome
-#    browserVersion: latest
+  - os: OS X
+    osVersion: Big Sur
+    browserName: Chrome
+    browserVersion: latest
 #  - os: Windows
 #    osVersion: 10
 #    browserName: Edge
@@ -72,9 +72,9 @@ browserstackLocal: true # <boolean> (Default false)
 # ===================
 # Debugging features
 # ===================
-debug: true # <boolean> # Set to true if you need screenshots for every selenium command ran
+debug: false # <boolean> # Set to true if you need screenshots for every selenium command ran
 networkLogs: false # <boolean> Set to true to enable HAR logs capturing
-consoleLogs: warnings # <string> Remote browser's console debug levels to be printed (Default: errors)
+consoleLogs: errors # <string> Remote browser's console debug levels to be printed (Default: errors)
 # Available options are `disable`, `errors`, `warnings`, `info`, `verbose` (Default: errors)
 
 # Test Observability is an intelligent test reporting & debugging product. It collects data using the SDK. Read more about what data is collected at https://www.browserstack.com/docs/test-observability/references/terms-and-conditions

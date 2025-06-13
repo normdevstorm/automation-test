@@ -108,4 +108,7 @@ public class ExcelHelpers {
         }
     }
 
+    public void setCellData(String text, String columnName, int rownum) throws Exception {
+            setCellData(text, rownum, columns.get(columnName));
+    }
 }

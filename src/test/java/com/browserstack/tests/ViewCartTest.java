@@ -56,7 +56,7 @@ public class ViewCartTest extends  SeleniumTest {
     }
 
     @Test(
-            dependsOnMethods = {"com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"},
+//            dependsOnMethods = {"com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"},
             groups = "NotClearCookies")
     @Feature(("View Cart"))
     @Description("Set initial shipping address")

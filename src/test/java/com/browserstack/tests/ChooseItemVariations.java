@@ -7,9 +7,9 @@ import io.qameta.allure.Feature;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 import pages.ProductDetailPage;
+import utils.DriverManager;
 
 @Listeners({com.browserstack.listeners.CustomExcecutionListener.class})
-@Test()
 public class ChooseItemVariations extends SeleniumTest {
 
     // This class is intended to handle the selection of item variations
@@ -40,7 +40,6 @@ public class ChooseItemVariations extends SeleniumTest {
                 productDetailPage.closeCheckoutDialog();
             }
         }
-        productDetailPage.navigateToViewCartPage();
     }
 
     @Test(groups = "ChooseItemVariations")

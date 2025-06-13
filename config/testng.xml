@@ -4,7 +4,16 @@
 <suite name="TheBluesTestSuite" parallel="methods">
     <test name="TestOrder">
         <classes>
-            <class name="com.browserstack.tests.AddProductToCartTest" />
+            <class name="com.browserstack.tests.ChooseItemVariations">
+            <methods>
+                <include name="addProductToCartWithVariations"/>
+            </methods>
+            </class>
+            <class name="com.browserstack.tests.ShippingAndPaymentTest">
+                <methods>
+                    <include name="verifyOrderFailsWhenTermsAndConditionsNotChecked"/>
+                </methods>
+            </class>
         </classes>
     </test>
 </suite>
