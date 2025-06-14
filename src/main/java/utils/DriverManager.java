@@ -69,9 +69,9 @@ public class DriverManager {
                 ChromeOptions options = new ChromeOptions();
 //                 Add your custom profile
 //                if(isLocal)
-//                options.addArguments("user-data-dir=/home/normdevstorm/.config/chromium/Default");
-                options.addArguments("user-data-dir=/home/Default");
-                options.addArguments("--allow-all-cookies");
+                options.addArguments("user-data-dir=/home/normdevstorm/.config/chromium/Default");
+//                options.addArguments("user-data-dir=/home/Default");
+//                options.addArguments("--allow-all-cookies");
 //                 Add memory-efficient options
                 options.addArguments("--disable-dev-shm-usage");
                 options.addArguments("--no-sandbox");

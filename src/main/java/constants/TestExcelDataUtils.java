@@ -9,9 +9,14 @@ public class TestExcelDataUtils {
 
     //EXCEL FIELD POSTFIX
     static public final String PRODUCT_URL = "PRODUCT_URL";
+    static public final String PRODUCT_NAME = "PRODUCT_NAME";
+    static public final String PRODUCT_PRICE = "PRODUCT_PRICE";
     static public final String SIZE = "SIZE";
     static public final String COLOR = "COLOR";
     static public final String QUANTITY = "QUANTITY";
+
+
+    static public final String SHIPPING_RATE = "SHIPPING_RATE";
     static public final String COUNTRY = "COUNTRY";
     static public final String CITY = "CITY";
     static public final String DISTRICT = "DISTRICT";

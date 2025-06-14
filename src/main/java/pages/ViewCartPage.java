@@ -2,6 +2,7 @@ package pages;
 
 import constants.FrameworkConstants;
 import io.qameta.allure.Allure;
+import models.ItemPriceModel;
 import org.checkerframework.checker.units.qual.A;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -16,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.asserts.SoftAssert;
+import utils.PriceUtils;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -119,20 +121,20 @@ public class ViewCartPage {
     @FindBy(className = "cart-empty")
     private WebElement emptyCartMessage;
 
-// Price and totals elements
+    // Price and totals elements
     @FindBy(css = ".product_price")
     private WebElement pricePerItem;
 
     @FindBy(css = ".product-subtotal")
     private WebElement productSubtotal;
 
-    @FindBy(css = ".cart-subtotal")
+    @FindBy(css = ".cart-subtotal .woocommerce-Price-amount")
     private WebElement cartSubtotal;
 
-    @FindBy(id = "shipping_method_0_flat_rate9")
+    @FindBy(css = "#shipping_method > li:nth-child(2) > label > span")
     private WebElement orderShippingRate;
 
-    @FindBy(css = ".order-total")
+    @FindBy(css = ".order-total .woocommerce-Price-amount amount")
     private WebElement orderTotal;
 
     /**
@@ -478,20 +480,100 @@ public class ViewCartPage {
         Assert.assertTrue(wait.until(ExpectedConditions.visibilityOf(backToShopButton)).isEnabled());
     }
 
-    public void verifyCartItemPrice(int itemIndex, String expectedPrice) {
-        log.info("Verifying price for cart item at index: {}", itemIndex);
+    public void verifyCartItemPrice(String itemTitle, String expectedPrice) {
+        log.info("Verifying price for cart item : {}", itemTitle);
         List<WebElement> itemsTableElements = cartItemsTable.findElements(By.tagName("tr"));
         if (itemsTableElements.isEmpty()) {
             log.warn("No items found in the cart to verify price.");
             return;
         }
-        if (itemIndex < 0 || itemIndex >= itemsTableElements.size()) {
-            log.warn("Invalid item index: {}. Available items: {}", itemIndex, itemsTableElements.size());
+
+        WebElement matchingRow = itemsTableElements.stream()
+                .filter(webElement -> {
+                    try {
+                        WebElement titleElement = webElement.findElement(By.cssSelector(".woocommerce-mini-cart-item-title"));
+                        return titleElement.getText().equals(itemTitle);
+                    } catch (Exception e) {
+                        return false;
+                    }
+                })
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Item with title '" + itemTitle + "' not found in cart"));
+        WebElement priceElement = matchingRow.findElement(By.cssSelector("td.product-price .woocommerce-Price-amount"));
+        log.info("Found price : {}", priceElement.getText());
+        String actualPrice = priceElement.getText().replaceAll("[^\\d.]", "");
+        Assert.assertEquals(actualPrice, expectedPrice, "Price mismatch for item  " + itemTitle);
+    }
+
+    public void verifyCartProductSubtotal(String itemTitle, String expectedSubtotal) {
+        log.info("Verifying product subtotal for item: {}", itemTitle);
+        List<WebElement> itemsTableElements = cartItemsTable.findElements(By.tagName("tr"));
+        if (itemsTableElements.isEmpty()) {
+            log.warn("No items found in the cart to verify subtotal.");
             return;
         }
-        WebElement priceElement = itemsTableElements.get(itemIndex).findElement(By.cssSelector(".product_price"));
-        String actualPrice = priceElement.getText().replaceAll("[^\\d.]", "");
-        Assert.assertEquals(actualPrice, expectedPrice, "Price mismatch for item at index " + itemIndex);
-        log.info("Price verified successfully for item at index: {}", itemIndex);
+
+        WebElement matchingRow = itemsTableElements.stream()
+                .filter(webElement -> {
+                    try {
+                        WebElement titleElement = webElement.findElement(By.cssSelector(".woocommerce-mini-cart-item-title"));
+                        return titleElement.getText().equals(itemTitle);
+                    } catch (Exception e) {
+                        return false;
+                    }
+                })
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Item with title '" + itemTitle + "' not found in cart"));
+        WebElement subtotalElement = matchingRow.findElement(By.cssSelector("td.product-subtotal .woocommerce-Price-amount"));
+        log.info("Found subtotal: {}", subtotalElement.getText());
+        String actualSubtotal = subtotalElement.getText().replaceAll("[^\\d.]", "");
+        Assert.assertEquals(actualSubtotal, expectedSubtotal, "Product subtotal does not match expected value for item " + itemTitle);
+        log.info("Product subtotal verified successfully for item: {}", itemTitle);
+    }
+
+    public void verifyCartSubtotal(String expectedSubtotal) {
+        log.info("Verifying cart subtotal");
+        String actualSubtotal = cartSubtotal.getText().replaceAll("[^\\d.]", "");
+        log.info("Expected subtotal: {}, Actual subtotal: {}", expectedSubtotal, actualSubtotal);
+        Assert.assertEquals(actualSubtotal, expectedSubtotal, "Cart subtotal does not match expected value");
+        log.info("Cart subtotal verified successfully: {}", actualSubtotal);
+    }
+
+    public void verifyOrderShippingRate(String expectedRate) {
+        log.info("Verifying order shipping rate");
+        String actualRate = orderShippingRate.getText().replaceAll("[^\\d.]", "");
+        log.info("Expected shipping rate: {}, Actual shipping rate: {}", expectedRate, actualRate);
+        Assert.assertEquals(actualRate, expectedRate, "Order shipping rate does not match expected value");
+        log.info("Order shipping rate verified successfully: {}", actualRate);
+    }
+
+//    public void verifyOrderTotal(String expectedTotal) {
+//        log.info("Verifying order total");
+//        String actualTotal = orderTotal.getText().replaceAll("[^\\d.]", "");
+//        log.info("Expected total: {}, Actual total: {}", expectedTotal, actualTotal);
+//        Assert.assertEquals(actualTotal, expectedTotal, "Order total does not match expected value");
+//        log.info("Order total verified successfully: {}", actualTotal);
+//    }
+
+    public void verifyOrderPriceSucceed(List<ItemPriceModel> itemPriceModels, String expectedShippingRate) {
+        log.info("Verifying order prices");
+        SoftAssert softAssert = new SoftAssert();
+
+        long expectedCartSubtotal = 0L;
+        // Verify each item price
+        for (ItemPriceModel itemPriceModel : itemPriceModels) {
+            verifyCartItemPrice(itemPriceModel.getItemName(), PriceUtils.formatPriceWithDots(itemPriceModel.getItemPrice()));
+            verifyCartProductSubtotal(itemPriceModel.getItemName(), PriceUtils.formatPriceWithDots(itemPriceModel.getExpectedSubtotal()));
+            expectedCartSubtotal += Long.parseLong(itemPriceModel.getExpectedSubtotal().replaceAll("[^\\d.]", ""));
+        }
+
+        // Verify shipping rate
+//        verifyOrderShippingRate(expectedShippingRate);
+        expectedCartSubtotal += Long.parseLong(expectedShippingRate.replaceAll("[^\\d.]", ""));
+
+        // Verify cart subtotal
+        verifyCartSubtotal( PriceUtils.formatPriceWithDots(Long.toString(expectedCartSubtotal)));
+
+        softAssert.assertAll();
     }
 }
