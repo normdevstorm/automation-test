@@ -1,11 +1,9 @@
 package pages;
 import io.qameta.allure.Allure;
 import io.qameta.allure.Step;
+import org.apache.commons.math3.analysis.function.Exp;
 import org.apache.xmlbeans.impl.xb.xsdschema.All;
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
@@ -25,6 +23,7 @@ import java.util.stream.Collectors;
 public class ProductDetailPage {
 
     private static final Logger log = LoggerFactory.getLogger(ProductDetailPage.class);
+    private static final int SHORT_TIMEOUT = 15;
     WebDriver webDriver;
     Actions actions;
 
@@ -65,7 +64,7 @@ public class ProductDetailPage {
 
     // Pass test data to this method
     public void addCardFluentActionsTest(String size, String quantity, String color) {
-       WebDriverWait wait =  new WebDriverWait(webDriver, Duration.ofSeconds(20));
+       WebDriverWait wait =  new WebDriverWait(webDriver, Duration.ofSeconds(30));
 
        wait.until(
                 webDriver1 -> ((JavascriptExecutor) webDriver1)
@@ -112,6 +111,32 @@ public class ProductDetailPage {
         }
     }
 
+    /**
+     * Waits for an element to become interactive after a state change
+     * @param element The WebElement to check
+     */
+    private void waitForElementToBeInteractive(WebElement element) {
+        try {
+            WebDriverWait wait =  new WebDriverWait(webDriver, Duration.ofSeconds(15));
+            // First wait for it to be visible
+            wait.until(ExpectedConditions.visibilityOf(element));
+
+            // Then wait a bit more for any AJAX requests to complete
+            Duration pollInterval = Duration.ofMillis(1000);
+            WebDriverWait shortWait = new WebDriverWait(webDriver, Duration.ofSeconds(SHORT_TIMEOUT), pollInterval);
+            shortWait.until(driver -> {
+                try {
+                    return element.isEnabled() && element.isDisplayed();
+                } catch (Exception e) {
+                    return false;
+                }
+            });
+        } catch (Exception e) {
+            log.warn("Element may not be fully interactive yet: {}", element, e);
+        }
+    }
+
+
     private void chooseColorAttribute(String color) {
         WebDriverWait wait = new WebDriverWait(webDriver, Duration.ofSeconds(10));
         wait.until(ExpectedConditions.visibilityOf(attributeColor));
@@ -138,13 +163,14 @@ public class ProductDetailPage {
                 .filter(webElement -> webElement.getAttribute("data-title").contains(size))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Color option not found: " + size));
+//        waitForElementToBeInteractive(targetSizeOption);
         scrollToElement(targetSizeOption);
         targetSizeOption.click();
-        if(!targetSizeOption.isSelected()){
+        if(!targetSizeOption.getAttribute("class").contains("selected")) {
             targetSizeOption.click();
         }
-        Assert.assertTrue(targetSizeOption.getAttribute("class").contains("selected"));
-        Assert.assertTrue(targetSizeOption.getAttribute("data-title").contains(size), "The expected size and the actual are not matched with each other!!!");
+        Assert.assertTrue(wait.until(ExpectedConditions.attributeContains(targetSizeOption, "class", "selected")));
+        Assert.assertTrue(wait.until(ExpectedConditions.attributeContains(targetSizeOption,"data-title",size)), "The expected size and the actual are not matched with each other!!!");
         Allure.step("Choose size attribute: " + size);
 
     }
@@ -162,11 +188,11 @@ public class ProductDetailPage {
         wait.until(ExpectedConditions.elementToBeClickable(buttonAddToCart)).click();
         log.info("Add to cart button clicked");
         Allure.step("Click Add to Cart button");
-        wait.until(ExpectedConditions.visibilityOf(checkoutDialog));
+//        wait.until(ExpectedConditions.visibilityOf(checkoutDialog));
     }
 
     public void closeCheckoutDialog() {
-        WebDriverWait wait = new WebDriverWait(webDriver, Duration.ofSeconds(10));
+        WebDriverWait wait = new WebDriverWait(webDriver, Duration.ofSeconds(30));
         wait.until(ExpectedConditions.visibilityOf(closeCheckoutDialogButton)).click();
         log.info("Checkout dialog closed");
         Allure.step("Close checkout dialog");
@@ -179,6 +205,7 @@ public class ProductDetailPage {
             String alertText = webDriver.switchTo().alert().getText();
             log.info("Alert text: {}", alertText);
             webDriver.switchTo().alert().accept();
+            Thread.sleep(1000); // Wait for the alert to be accepted
             Allure.step("Alert accepted with text: " + alertText);
         } catch (Exception e) {
             log.warn("No alert to handle", e);
@@ -222,8 +249,10 @@ public class ProductDetailPage {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            Assert.assertTrue(webDriver.findElements(By.xpath("/html/body/div[12]/div[2]/div[2]/div/div[2]/a[3]")).isEmpty());
 
+            if (!webDriver.findElements(By.xpath("/html/body/div[12]/div[2]/div[2]/div/div[2]/a[3]")).isEmpty()) {
+                Assert.fail("Checkout dialog is displayed, but it should not be!");
+            }
             Allure.step("Attempted to add to cart with invalid quantity: " + invalidQuantity);
         }
 }

@@ -4,11 +4,16 @@ import com.browserstack.common.ExcelHelpers;
 import constants.TestExcelDataUtils;
 import io.qameta.allure.Description;
 import io.qameta.allure.Feature;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 import pages.ProductDetailPage;
 import utils.DriverManager;
 
+import static utils.DriverManager.clearBrowserData;
+
+@Test(groups = {"ChooseItemVariations"})
 @Listeners({com.browserstack.listeners.CustomExcecutionListener.class})
 public class ChooseItemVariations extends SeleniumTest {
 
@@ -16,21 +21,51 @@ public class ChooseItemVariations extends SeleniumTest {
     // such as size, color, and quantity on a product detail page.
     // It will interact with the UI elements to choose the desired variations.
 
-    ExcelHelpers productDetailPageData = new ExcelHelpers();
+    private static final int TC_AC_1_DATA_ROW_OFFSET = 1; // Offset for the first data row in the Excel file
+    private static final int TC_AC_1_DATA_RECORD_NUMBER = 3; // Offset for the first data row in the Excel file
+    private static final int TC_AC_2_DATA_ROW_OFFSET = 4; // Offset for the first data row in the Excel file
+    private static final int TC_AC_3_DATA_ROW_OFFSET = 5; // Offset for the first data row in the Excel file
+    private static final int TC_AC_4_DATA_ROW_OFFSET = 6; // Offset for the first data row in the Excel file
+    private static final int TC_AC_5_DATA_ROW_OFFSET = 1; // Offset for the first data row in the Excel file
+    private static final int TC_AC_6_DATA_ROW_OFFSET = 1; // Offset for the first data row in the Excel file
 
-    @Test(testName = "Add product to cart with variations", invocationCount = 1,groups = "NotClearCookies")
+
+    @BeforeMethod(alwaysRun = true)
+    @SuppressWarnings("unchecked")
+    public void setUp() throws Exception {
+        driver = DriverManager.getInstance().getDriver();
+//        clearBrowserData();
+    }
+
+    @AfterMethod(onlyForGroups = {"ClearCookies"})
+    public void clearCookies() throws Exception {
+        Thread.sleep(1000);
+        clearBrowserData();
+    }
+
+    @AfterMethod( onlyForGroups = {"ClearCookies"})
+    public void tearDown() throws Exception {
+        driver = DriverManager.getInstance().getDriver();
+        driver.quit();
+    }
+
+
+    @Test(testName = "TC_AC_1", invocationCount = 1
+                   ,groups = {"NotClearCookies"}, alwaysRun = true
+    )
     @Feature("Choose item variations")
     @Description("Add product to cart with variations")
-    public void addProductToCartWithVariations() throws Exception {
-        String testUrl = "https://theblues.com.vn/san-pham/ao-so-mi-nam-hoa-tiet-hk1-ms22n023ubr4/";
-        driver.get(testUrl);
+    public static void addProductToCartWithVariations() throws Exception {
+        ExcelHelpers productDetailPageData = new ExcelHelpers();
         // Set the Excel file and sheet for product detail data
         productDetailPageData.setExcelFile(TestExcelDataUtils.ORDER_DATA_PATH, TestExcelDataUtils.PRODUCT_DETAIL_DATA_SHEET);
-        int numOfRecords = 2;
-        int recordOffset = 1;
+        // TODO: SET GLOBAL VARIABLES FOR RECORDS NUMBER AND OFFSET
+        int numOfRecords = TC_AC_1_DATA_RECORD_NUMBER;
+        int recordOffset = TC_AC_1_DATA_ROW_OFFSET;
         ProductDetailPage productDetailPage = new ProductDetailPage(driver);
 
         for (int i = 1; i < recordOffset + numOfRecords ; i++) {
+            driver.get(productDetailPageData.getCellData(TestExcelDataUtils.PRODUCT_URL, i));
             productDetailPage.addCardFluentActionsTest(
                     productDetailPageData.getCellData(TestExcelDataUtils.SIZE, i),
                     productDetailPageData.getCellData(TestExcelDataUtils.QUANTITY, i),
@@ -40,16 +75,18 @@ public class ChooseItemVariations extends SeleniumTest {
                 productDetailPage.closeCheckoutDialog();
             }
         }
+        productDetailPage.navigateToViewCartPage();
     }
 
-    @Test(groups = "ChooseItemVariations")
+    @Test(testName = "TC_AC_2", groups = {"ClearCookies"})
     @Feature("Choose item variations")
-    @Description("Create order of an item with variations")
-    public void testTB1() throws Exception {
+    @Description("Verify that adding product to cart with variations fails after resetting variations")
+    public void addToCartFailedAfterResetVariations() throws Exception {
+        ExcelHelpers productDetailPageData = new ExcelHelpers();
         String testUrl = "https://theblues.com.vn/san-pham/thun-croptop-in-hinh-tvm-t2m-19-478/";
         // Set the Excel file and sheet for product detail data
         productDetailPageData.setExcelFile(TestExcelDataUtils.ORDER_DATA_PATH, TestExcelDataUtils.PRODUCT_DETAIL_DATA_SHEET);
-        int rowNumber = 2; // Row number in the Excel file to be used for this test
+        int rowNumber = TC_AC_2_DATA_ROW_OFFSET; // Row number in the Excel file to be used for this test
         ProductDetailPage productDetailPage = new ProductDetailPage(driver);
         productDetailPage.addToCartFailedAfterResetVariations(testUrl,
                 productDetailPageData.getCellData(TestExcelDataUtils.SIZE, rowNumber),
@@ -57,29 +94,30 @@ public class ChooseItemVariations extends SeleniumTest {
                 productDetailPageData.getCellData(TestExcelDataUtils.COLOR, rowNumber));
     }
 
-    @Test(groups = "ChooseItemVariations")
+    @Test(testName = "TC_AC_3", groups = {"ClearCookies"})
     @Feature("Choose item variations")
     @Description("Choose item with zero quantity")
     public void chooseItemWithZeroQuantity() throws Exception {
+        ExcelHelpers productDetailPageData = new ExcelHelpers();
         String testUrl = "https://theblues.com.vn/san-pham/thun-croptop-in-hinh-tvm-t2m-19-478/";
         // Set the Excel file and sheet for product detail data
         productDetailPageData.setExcelFile(TestExcelDataUtils.ORDER_DATA_PATH, TestExcelDataUtils.PRODUCT_DETAIL_DATA_SHEET);
-        int rowNumber = 2; // Row number in the Excel file to be used for this test
+        int rowNumber = TC_AC_3_DATA_ROW_OFFSET; // Row number in the Excel file to be used for this test
         ProductDetailPage productDetailPage = new ProductDetailPage(driver);
         productDetailPage.addToCartWithZeroQuantity(testUrl,
                 productDetailPageData.getCellData(TestExcelDataUtils.SIZE, rowNumber),
                 productDetailPageData.getCellData(TestExcelDataUtils.COLOR, rowNumber));
     }
 
-      @Test(groups = "ChooseItemVariations")
-
+    @Test(testName = "TC_AC_4", groups = {"ClearCookies"})
     @Feature("Choose item variations")
     @Description("Choose item with invalid quantity")
     public void chooseItemWithInvalidQuantity() throws Exception {
+        ExcelHelpers productDetailPageData = new ExcelHelpers();
         String testUrl = "https://theblues.com.vn/san-pham/thun-croptop-in-hinh-tvm-t2m-19-478/";
         // Set the Excel file and sheet for product detail data
         productDetailPageData.setExcelFile(TestExcelDataUtils.ORDER_DATA_PATH, TestExcelDataUtils.PRODUCT_DETAIL_DATA_SHEET);
-        int rowNumber = 3; // Row number in the Excel file to be used for this test
+        int rowNumber = TC_AC_4_DATA_ROW_OFFSET; // Row number in the Excel file to be used for this test
         ProductDetailPage productDetailPage = new ProductDetailPage(driver);
         productDetailPage.addToCartWithInvalidQuantity(testUrl,
                 productDetailPageData.getCellData(TestExcelDataUtils.SIZE, rowNumber),

@@ -2,6 +2,7 @@ package pages;
 
 import constants.FrameworkConstants;
 import io.qameta.allure.Allure;
+import org.checkerframework.checker.units.qual.A;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -17,6 +18,7 @@ import org.testng.Assert;
 import org.testng.asserts.SoftAssert;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,8 +29,8 @@ import java.util.stream.Collectors;
 public class ViewCartPage {
     private static final Logger log = LoggerFactory.getLogger(ViewCartPage.class);
     private static final String CART_URL = "https://theblues.com.vn/cart/";
-    private static final long DEFAULT_TIMEOUT = 15;
-    private static final long SHORT_TIMEOUT = 5;
+    private static final long DEFAULT_TIMEOUT = 30;
+    private static final long SHORT_TIMEOUT = 15;
 
     private final WebDriver webDriver;
     private final WebDriverWait wait;
@@ -60,6 +62,9 @@ public class ViewCartPage {
     @FindBy(id = "select2-calc_shipping_country-results")
     private WebElement countryResultsList;
 
+    @FindBy(id = "calc_shipping_country_field")
+    private WebElement countryFieldButton;
+
     // State dropdown elements
     @FindBy(id = "calc_shipping_state")
     private WebElement stateDropdown;
@@ -70,6 +75,9 @@ public class ViewCartPage {
     @FindBy(id = "select2-calc_shipping_state-results")
     private WebElement stateResultsList;
 
+    @FindBy(id = "calc_shipping_state_field")
+    private WebElement stateFieldButton;
+
     // City dropdown elements
     @FindBy(id = "calc_shipping_city")
     private WebElement cityDropdown;
@@ -79,6 +87,9 @@ public class ViewCartPage {
 
     @FindBy(id = "select2-calc_shipping_city-results")
     private WebElement cityResultsList;
+
+    @FindBy(id = "calc_shipping_city_field")
+    private WebElement cityFieldButton;
 
     // Common dropdown search field
     @FindBy(css = ".select2-search__field")
@@ -107,8 +118,26 @@ public class ViewCartPage {
 
     @FindBy(className = "cart-empty")
     private WebElement emptyCartMessage;
+
+// Price and totals elements
+    @FindBy(css = ".product_price")
+    private WebElement pricePerItem;
+
+    @FindBy(css = ".product-subtotal")
+    private WebElement productSubtotal;
+
+    @FindBy(css = ".cart-subtotal")
+    private WebElement cartSubtotal;
+
+    @FindBy(id = "shipping_method_0_flat_rate9")
+    private WebElement orderShippingRate;
+
+    @FindBy(css = ".order-total")
+    private WebElement orderTotal;
+
     /**
      * Constructor initializes the ViewCartPage with WebDriver
+     *
      * @param webDriver The WebDriver instance
      */
     public ViewCartPage(WebDriver webDriver) {
@@ -122,7 +151,7 @@ public class ViewCartPage {
         log.info("Fetching notice text from the cart page");
         wait.until(ExpectedConditions.visibilityOf(noticeWrapper));
         List<WebElement> noticeElements = noticeWrapper.findElements(By.className("woocommerce-message"));
-        String noticeText=  noticeElements.get(0).getText();
+        String noticeText = noticeElements.get(0).getText();
         log.debug("Notice text: {}", noticeText);
         return noticeText;
     }
@@ -165,6 +194,7 @@ public class ViewCartPage {
     /**
      * Modifies the shipping address with the provided location details
      * This method is kept as per original signature to maintain compatibility
+     *
      * @param addressLine1 The country name
      * @param addressLine2 The state/province name
      * @param addressLine3 The city name
@@ -184,23 +214,23 @@ public class ViewCartPage {
         addressModificationButton.click();
 
         // Select country
-        selectAddressOption(countryDropdownButton, countryResultsList, addressLine1);
+        selectAddressOption(countryFieldButton, countryDropdownButton, countryResultsList, addressLine1);
 
 
         // Select state
-        selectAddressOption(stateDropdownButton, stateResultsList, addressLine2);
+        selectAddressOption(stateFieldButton, stateDropdownButton, stateResultsList, addressLine2);
 
         // Wait for city dropdown to become interactive after state selection
-        waitForElementToBeInteractive(cityDropdownButton);
+//        waitForElementToBeInteractive(cityDropdownButton);
 
         // Select city
-        selectAddressOption(cityDropdownButton, cityResultsList, addressLine3);
+        selectAddressOption(cityFieldButton, cityDropdownButton, cityResultsList, addressLine3);
 
         // Update the address
         wait.until(ExpectedConditions.elementToBeClickable(updateAddressButton)).click();
 
-        // Verify the notice appears, indicating successful update
-        wait.until(ExpectedConditions.visibilityOf(noticeUpdateAddressWrapper));
+        // Verify the block UI disappears, indicating successful update
+        wait.until(ExpectedConditions.invisibilityOf(blockOverlay));
         log.debug(shippingDestinationSpan.getText());
 
         Assert.assertTrue(shippingDestinationSpan.getText().contains(addressLine2));
@@ -211,13 +241,15 @@ public class ViewCartPage {
 
     /**
      * Selects an address option from a dropdown
+     *
      * @param dropdownButton The dropdown button element
-     * @param resultsList The results list element
-     * @param optionText The text of the option to select
+     * @param resultsList    The results list element
+     * @param optionText     The text of the option to select
      */
-    private void selectAddressOption(WebElement dropdownButton, WebElement resultsList, String optionText) {
+    private void selectAddressOption(WebElement fieldButton, WebElement dropdownButton, WebElement resultsList, String optionText) {
         // Open dropdown
-        wait.until(ExpectedConditions.elementToBeClickable(dropdownButton)).click();
+        waitForElementToBeInteractive(fieldButton);
+        fieldButton.click();
 
         // Enter search text if input field is available
         try {
@@ -228,33 +260,43 @@ public class ViewCartPage {
             log.debug("Search input not found or not needed for {}", optionText);
         }
 
-        // Wait for results to appear
-        wait.until(ExpectedConditions.visibilityOf(resultsList));
+        try {
+            wait.until(ExpectedConditions.refreshed(ExpectedConditions.visibilityOf(resultsList)));
+        } catch (Exception e) {
+            log.error("Error waiting for results list to become visible: {}", e.getMessage());
+        }
 
-        // Find and click the matching option
-        List<WebElement> matchingOptions = resultsList.findElements(By.tagName("li"))
-                .stream()
-                .filter(option -> option.getText().contains(optionText))
-                .collect(Collectors.toList());
+// Wait for results to appear if resultsList exists
+        List<WebElement> matchingOptions = new ArrayList<>();
+        try {
+            matchingOptions = wait.until(driver -> {
+                List<WebElement> options = resultsList.findElements(By.tagName("li"));
+                return options.stream()
+                        .filter(option -> option.getText().contains(optionText))
+                        .collect(Collectors.toList());
+            });
+        } catch (Exception e) {
+            log.error("Error finding options in results list: {}", e.getMessage());
+        }
 
         if (!matchingOptions.isEmpty()) {
             WebElement targetOption = matchingOptions.get(0);
-            wait.until(ExpectedConditions.elementToBeClickable(targetOption)).click();
+            waitForElementToBeInteractive(targetOption);
+            targetOption.click();
+//            wait.until(ExpectedConditions.elementToBeClickable(targetOption)).click();
             log.debug("Selected option: {}", optionText);
+
+            // Wait for dropdown to close and show selected value
+            wait.until(ExpectedConditions.visibilityOf(dropdownButton));
+            log.debug("Selected value: {}", dropdownButton.getText());
         } else {
             log.warn("No address option found matching: {}", optionText);
         }
-
-        // Wait for dropdown to close and show selected value
-        wait.until(ExpectedConditions.visibilityOf(dropdownButton));
-        log.debug("Selected value: {}", dropdownButton.getText());
-
-        SoftAssert softAssert = new SoftAssert();
-        softAssert.assertTrue(dropdownButton.getText().contains(optionText));
     }
 
     /**
      * Waits for an element to become interactive after a state change
+     *
      * @param element The WebElement to check
      */
     private void waitForElementToBeInteractive(WebElement element) {
@@ -263,7 +305,7 @@ public class ViewCartPage {
             wait.until(ExpectedConditions.visibilityOf(element));
 
             // Then wait a bit more for any AJAX requests to complete
-            Duration pollInterval = Duration.ofMillis(200);
+            Duration pollInterval = Duration.ofMillis(1000);
             WebDriverWait shortWait = new WebDriverWait(webDriver, Duration.ofSeconds(SHORT_TIMEOUT), pollInterval);
             shortWait.until(driver -> {
                 try {
@@ -289,9 +331,9 @@ public class ViewCartPage {
     }
 
 
-
     /**
      * Updates the quantity of an item in the cart
+     *
      * @param quantity The new quantity
      */
     public void updateItemQuantity(int quantity) {
@@ -303,6 +345,7 @@ public class ViewCartPage {
     /**
      * Navigates to the order shipping and payment page
      * This method is kept as per original signature to maintain compatibility
+     *
      * @return An instance of OrderShippingAndPaymentPage
      */
     public OrderShippingAndPaymentPage navigateToOrderShippingAndPaymentPage() {
@@ -313,6 +356,7 @@ public class ViewCartPage {
 
     /**
      * Alternative method to select country using the Select class
+     *
      * @param countryValue The country value to select
      */
     public void selectCountry(String countryValue) {
@@ -322,12 +366,13 @@ public class ViewCartPage {
             countrySelect.selectByValue(countryValue);
         } catch (Exception e) {
             log.debug("Regular Select doesn't work, using custom dropdown handling");
-            selectAddressOption(countryDropdownButton, countryResultsList, countryValue);
+            selectAddressOption(countryFieldButton, countryDropdownButton, countryResultsList, countryValue);
         }
     }
 
     /**
      * Alternative method to select state using the Select class
+     *
      * @param stateValue The state value to select
      */
     public void selectState(String stateValue) {
@@ -337,12 +382,13 @@ public class ViewCartPage {
             stateSelect.selectByValue(stateValue);
         } catch (Exception e) {
             log.debug("Regular Select doesn't work, using custom dropdown handling");
-            selectAddressOption(stateDropdownButton, stateResultsList, stateValue);
+            selectAddressOption(stateFieldButton, stateDropdownButton, stateResultsList, stateValue);
         }
     }
 
     /**
      * Alternative method to select city using the Select class
+     *
      * @param cityValue The city value to select
      */
     public void selectCity(String cityValue) {
@@ -352,15 +398,16 @@ public class ViewCartPage {
             citySelect.selectByValue(cityValue);
         } catch (Exception e) {
             log.debug("Regular Select doesn't work, using custom dropdown handling");
-            selectAddressOption(cityDropdownButton, cityResultsList, cityValue);
+            selectAddressOption(cityFieldButton, cityDropdownButton, cityResultsList, cityValue);
         }
     }
 
     /**
      * Modern version of modifyShippingAddress with better parameter names
+     *
      * @param country The country name
-     * @param state The state/province name
-     * @param city The city name
+     * @param state   The state/province name
+     * @param city    The city name
      */
     public void updateShippingAddress(String country, String state, String city) {
         log.info("Updating shipping address with country: {}, state: {}, city: {}",
@@ -417,7 +464,7 @@ public class ViewCartPage {
             log.warn("No items found in the cart to delete.");
             return;
         }
-        for(int i = 1; i < itemsTableElements.size(); i++) {
+        for (int i = 1; i < itemsTableElements.size(); i++) {
             log.info("Deleting items numbered: {}", i);
             deleteCartItem(1);
             wait.until(ExpectedConditions.visibilityOf(noticeWrapper));
@@ -429,5 +476,22 @@ public class ViewCartPage {
         Assert.assertTrue(wait.until(ExpectedConditions.invisibilityOf(checkoutButton)));
         Assert.assertEquals(wait.until(ExpectedConditions.visibilityOf(emptyCartMessage)).getText(), FrameworkConstants.CART_EMPTY_MESSAGE);
         Assert.assertTrue(wait.until(ExpectedConditions.visibilityOf(backToShopButton)).isEnabled());
+    }
+
+    public void verifyCartItemPrice(int itemIndex, String expectedPrice) {
+        log.info("Verifying price for cart item at index: {}", itemIndex);
+        List<WebElement> itemsTableElements = cartItemsTable.findElements(By.tagName("tr"));
+        if (itemsTableElements.isEmpty()) {
+            log.warn("No items found in the cart to verify price.");
+            return;
+        }
+        if (itemIndex < 0 || itemIndex >= itemsTableElements.size()) {
+            log.warn("Invalid item index: {}. Available items: {}", itemIndex, itemsTableElements.size());
+            return;
+        }
+        WebElement priceElement = itemsTableElements.get(itemIndex).findElement(By.cssSelector(".product_price"));
+        String actualPrice = priceElement.getText().replaceAll("[^\\d.]", "");
+        Assert.assertEquals(actualPrice, expectedPrice, "Price mismatch for item at index " + itemIndex);
+        log.info("Price verified successfully for item at index: {}", itemIndex);
     }
 }

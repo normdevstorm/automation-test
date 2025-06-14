@@ -8,6 +8,7 @@ public class TestExcelDataUtils {
     static public final String ORDER_LIST_DATA_SHEET ="ORDER_LIST_PAGE";
 
     //EXCEL FIELD POSTFIX
+    static public final String PRODUCT_URL = "PRODUCT_URL";
     static public final String SIZE = "SIZE";
     static public final String COLOR = "COLOR";
     static public final String QUANTITY = "QUANTITY";

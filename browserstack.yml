@@ -11,7 +11,7 @@ accessKey: zV8LCCTv78NdrLwwiA8a
 # ======================
 # The following capabilities are used to set up reporting on BrowserStack:
 # Set 'projectName' to the name of your project. Example, Marketing Website
-projectName: BrowserStack Samples 
+projectName: VIEW CART TEST # <string> (Default: null)
 # Set `buildName` as the name of the job / testsuite being run
 buildName: browserstack build 
 # `buildIdentifier` is a unique id to differentiate every execution that gets appended to
@@ -30,14 +30,14 @@ framework: testng
 # Platforms object contains all the browser / device combinations you want to test on.
 # Entire list available here -> (https://www.browserstack.com/list-of-browsers-and-platforms/automate)
 platforms:
-  - os: OS X
-    osVersion: Big Sur
+#  - os: OS X
+#    osVersion: Big Sur
+#    browserName: Chrome
+#    browserVersion: latest
+  - os: Windows
+    osVersion: 10
     browserName: Chrome
     browserVersion: latest
-#  - os: Windows
-#    osVersion: 10
-#    browserName: Edge
-#    browserVersion: latest
 #  - deviceName: Samsung Galaxy S22 Ultra
 #    browserName: chrome # Try 'samsung' for Samsung browser
 #    osVersion: 12.0
@@ -74,7 +74,7 @@ browserstackLocal: true # <boolean> (Default false)
 # ===================
 debug: false # <boolean> # Set to true if you need screenshots for every selenium command ran
 networkLogs: false # <boolean> Set to true to enable HAR logs capturing
-consoleLogs: errors # <string> Remote browser's console debug levels to be printed (Default: errors)
+consoleLogs: info # <string> Remote browser's console debug levels to be printed (Default: errors)
 # Available options are `disable`, `errors`, `warnings`, `info`, `verbose` (Default: errors)
 
 # Test Observability is an intelligent test reporting & debugging product. It collects data using the SDK. Read more about what data is collected at https://www.browserstack.com/docs/test-observability/references/terms-and-conditions
