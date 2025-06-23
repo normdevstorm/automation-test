@@ -4,12 +4,16 @@ import com.browserstack.common.ExcelHelpers;
 import constants.TestExcelDataUtils;
 import io.qameta.allure.Description;
 import io.qameta.allure.Feature;
+import org.testng.ITestNGMethod;
+import org.testng.Reporter;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 import pages.ProductDetailPage;
 import utils.DriverManager;
+
+import java.lang.reflect.Method;
 
 import static utils.DriverManager.clearBrowserData;
 
@@ -26,7 +30,7 @@ public class ChooseItemVariations extends SeleniumTest {
     private static final int TC_AC_2_DATA_ROW_OFFSET = 4; // Offset for the first data row in the Excel file
     private static final int TC_AC_3_DATA_ROW_OFFSET = 5; // Offset for the first data row in the Excel file
     private static final int TC_AC_4_DATA_ROW_OFFSET = 6; // Offset for the first data row in the Excel file
-    private static final int TC_AC_5_DATA_ROW_OFFSET = 1; // Offset for the first data row in the Excel file
+    private static final int TC_AC_5_DATA_ROW_OFFSET = 10; // Offset for the first data row in the Excel file
     private static final int TC_AC_6_DATA_ROW_OFFSET = 1; // Offset for the first data row in the Excel file
 
 
@@ -37,16 +41,23 @@ public class ChooseItemVariations extends SeleniumTest {
 //        clearBrowserData();
     }
 
-    @AfterMethod(onlyForGroups = {"ClearCookies"})
+    @AfterMethod(onlyForGroups = {"ClearCookies"}, lastTimeOnly = true)
     public void clearCookies() throws Exception {
         Thread.sleep(1000);
         clearBrowserData();
     }
 
-    @AfterMethod( onlyForGroups = {"ClearCookies"})
+    @AfterMethod( onlyForGroups = {"ClearCookies"}, lastTimeOnly = true)
     public void tearDown() throws Exception {
         driver = DriverManager.getInstance().getDriver();
         driver.quit();
+    }
+
+
+    public int getInvocationCount(String methodName) throws NoSuchMethodException {
+        Method method = ChooseItemVariations.class.getMethod(methodName);
+        Test testAnnotation = method.getAnnotation(Test.class);
+        return testAnnotation != null ? testAnnotation.invocationCount() : 1;
     }
 
 
@@ -64,7 +75,7 @@ public class ChooseItemVariations extends SeleniumTest {
         int recordOffset = TC_AC_1_DATA_ROW_OFFSET;
         ProductDetailPage productDetailPage = new ProductDetailPage(driver);
 
-        for (int i = 1; i < recordOffset + numOfRecords ; i++) {
+        for (int i = TC_AC_1_DATA_ROW_OFFSET; i < recordOffset + numOfRecords ; i++) {
             driver.get(productDetailPageData.getCellData(TestExcelDataUtils.PRODUCT_URL, i));
             productDetailPage.addCardFluentActionsTest(
                     productDetailPageData.getCellData(TestExcelDataUtils.SIZE, i),
@@ -109,17 +120,35 @@ public class ChooseItemVariations extends SeleniumTest {
                 productDetailPageData.getCellData(TestExcelDataUtils.COLOR, rowNumber));
     }
 
-    @Test(testName = "TC_AC_4", groups = {"ClearCookies"})
+    @Test(testName = "TC_AC_4", groups = {"ClearCookies"}, invocationCount = 4)
     @Feature("Choose item variations")
     @Description("Choose item with invalid quantity")
     public void chooseItemWithInvalidQuantity() throws Exception {
+        ITestNGMethod method = Reporter.getCurrentTestResult().getMethod();
         ExcelHelpers productDetailPageData = new ExcelHelpers();
         String testUrl = "https://theblues.com.vn/san-pham/thun-croptop-in-hinh-tvm-t2m-19-478/";
         // Set the Excel file and sheet for product detail data
         productDetailPageData.setExcelFile(TestExcelDataUtils.ORDER_DATA_PATH, TestExcelDataUtils.PRODUCT_DETAIL_DATA_SHEET);
-        int rowNumber = TC_AC_4_DATA_ROW_OFFSET; // Row number in the Excel file to be used for this test
+        int rowNumber = TC_AC_4_DATA_ROW_OFFSET  + method.getCurrentInvocationCount();
         ProductDetailPage productDetailPage = new ProductDetailPage(driver);
-        productDetailPage.addToCartWithInvalidQuantity(testUrl,
+            productDetailPage.addToCartWithInvalidQuantity(testUrl,
+                    productDetailPageData.getCellData(TestExcelDataUtils.SIZE, rowNumber),
+                    productDetailPageData.getCellData(TestExcelDataUtils.COLOR, rowNumber),
+                    productDetailPageData.getCellData(TestExcelDataUtils.QUANTITY, rowNumber));
+
+    }
+
+    @Test(testName = "TC_AC_5", groups = {"ClearCookies"}, invocationCount = 2)
+    @Feature("Choose item variations")
+    @Description("Choose out of stock item")
+    public void verifyFailedAddToCartOutOfStockItem() throws Exception {
+        ITestNGMethod method = Reporter.getCurrentTestResult().getMethod();
+        ExcelHelpers productDetailPageData = new ExcelHelpers();
+        // Set the Excel file and sheet for product detail data
+        productDetailPageData.setExcelFile(TestExcelDataUtils.ORDER_DATA_PATH, TestExcelDataUtils.PRODUCT_DETAIL_DATA_SHEET);
+        int rowNumber = TC_AC_5_DATA_ROW_OFFSET + method.getCurrentInvocationCount(); // Row number in the Excel file to be used for this test
+        ProductDetailPage productDetailPage = new ProductDetailPage(driver);
+        productDetailPage.verifyFailedAddOutOfStockItemToCart(productDetailPageData.getCellData(TestExcelDataUtils.PRODUCT_URL, rowNumber),
                 productDetailPageData.getCellData(TestExcelDataUtils.SIZE, rowNumber),
                 productDetailPageData.getCellData(TestExcelDataUtils.COLOR, rowNumber),
                 productDetailPageData.getCellData(TestExcelDataUtils.QUANTITY, rowNumber));

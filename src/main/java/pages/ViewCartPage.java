@@ -499,7 +499,7 @@ public class ViewCartPage {
                 })
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Item with title '" + itemTitle + "' not found in cart"));
-        WebElement priceElement = matchingRow.findElement(By.cssSelector("td.product-price .woocommerce-Price-amount"));
+        WebElement priceElement = new ArrayList<>(matchingRow.findElements(By.cssSelector("td.product-price .woocommerce-Price-amount"))).getLast();
         log.info("Found price : {}", priceElement.getText());
         String actualPrice = priceElement.getText().replaceAll("[^\\d.]", "");
         Assert.assertEquals(actualPrice, expectedPrice, "Price mismatch for item  " + itemTitle);
@@ -524,7 +524,7 @@ public class ViewCartPage {
                 })
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Item with title '" + itemTitle + "' not found in cart"));
-        WebElement subtotalElement = matchingRow.findElement(By.cssSelector("td.product-subtotal .woocommerce-Price-amount"));
+        WebElement subtotalElement =  new ArrayList<>(matchingRow.findElements(By.cssSelector("td.product-subtotal .woocommerce-Price-amount"))).getLast();
         log.info("Found subtotal: {}", subtotalElement.getText());
         String actualSubtotal = subtotalElement.getText().replaceAll("[^\\d.]", "");
         Assert.assertEquals(actualSubtotal, expectedSubtotal, "Product subtotal does not match expected value for item " + itemTitle);
@@ -576,4 +576,5 @@ public class ViewCartPage {
 
         softAssert.assertAll();
     }
+
 }

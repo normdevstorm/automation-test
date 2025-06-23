@@ -1,24 +1,19 @@
 package pages;
+
+import exceptions.OutOfStockException;
 import io.qameta.allure.Allure;
-import io.qameta.allure.Step;
-import org.apache.commons.math3.analysis.function.Exp;
-import org.apache.xmlbeans.impl.xb.xsdschema.All;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
-import org.testng.annotations.Test;
-import utils.WebUI;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ProductDetailPage {
 
@@ -27,7 +22,7 @@ public class ProductDetailPage {
     WebDriver webDriver;
     Actions actions;
 
-    @FindBy(xpath = "//form/table/tbody/tr[1]/td[2]/ul")
+    @FindBy(css = "ul.variable-items-wrapper[data-attribute_name='attribute_pa_size']")
     private WebElement attributeSize;
     @FindBy(className = "rey-qtyField")
     private WebElement inputQuantity;
@@ -37,7 +32,7 @@ public class ProductDetailPage {
     private WebElement checkoutDialog;
     @FindBy(className = "rey-acPopup-buttons-cart")
     private WebElement viewCartButton;
-    @FindBy(xpath = "//form/table/tbody/tr[2]/td[2]/ul")
+    @FindBy(css = "ul.variable-items-wrapper[data-attribute_name='attribute_pa_mau-sac']")
     private WebElement attributeColor;
     @FindBy(className = "reset_variations")
     private WebElement resetVariationsButton;
@@ -45,7 +40,7 @@ public class ProductDetailPage {
     private WebElement closeCheckoutDialogButton;
 
 
-    public ProductDetailPage(WebDriver webDriver){
+    public ProductDetailPage(WebDriver webDriver) {
         this.webDriver = webDriver;
         this.actions = new Actions(webDriver);
         PageFactory.initElements(webDriver, this);
@@ -58,22 +53,22 @@ public class ProductDetailPage {
         Allure.step("Open product detail page: " + productUrl);
     }
 
-    public void selectNumberOfItems(){
+    public void selectNumberOfItems() {
 
     }
 
     // Pass test data to this method
     public void addCardFluentActionsTest(String size, String quantity, String color) {
-       WebDriverWait wait =  new WebDriverWait(webDriver, Duration.ofSeconds(30));
+        WebDriverWait wait = new WebDriverWait(webDriver, Duration.ofSeconds(30));
 
-       wait.until(
+        wait.until(
                 webDriver1 -> ((JavascriptExecutor) webDriver1)
                         .executeScript("return document.readyState").equals("complete")
-       );
+        );
 
         if (!webDriver.findElements(By.xpath("//form/table/tbody/tr[1]/td[2]/ul")).isEmpty()) {
             chooseSizeAttribute(size);
-       }
+        }
 
         if (!webDriver.findElements(By.xpath("//form/table/tbody/tr[2]/td[2]/ul")).isEmpty()) {
             chooseColorAttribute(color);
@@ -94,15 +89,15 @@ public class ProductDetailPage {
         Allure.step("Set item quantity to: " + quantity);
     }
 
-    public ViewCartPage navigateToViewCartPage(){
-        WebDriverWait wait =  new WebDriverWait(webDriver, Duration.ofSeconds(10));
+    public ViewCartPage navigateToViewCartPage() {
+        WebDriverWait wait = new WebDriverWait(webDriver, Duration.ofSeconds(10));
         wait.until(ExpectedConditions.visibilityOf(checkoutDialog));
         scrollToElement(viewCartButton);
         viewCartButton.click();
         return new ViewCartPage(webDriver);
     }
 
-     private void scrollToElement(WebElement element) {
+    private void scrollToElement(WebElement element) {
         ((JavascriptExecutor) webDriver).executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", element);
         try {
             Thread.sleep(2000);
@@ -111,13 +106,25 @@ public class ProductDetailPage {
         }
     }
 
+    private void scrollToMiddleOfPage() {
+        ((JavascriptExecutor) webDriver).executeScript(
+                "window.scrollTo({top: (document.body.scrollHeight - window.innerHeight) / 2, behavior: 'smooth'});"
+        );
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            log.warn("Scroll to middle pause was interrupted", e);
+        }
+    }
+
     /**
      * Waits for an element to become interactive after a state change
+     *
      * @param element The WebElement to check
      */
     private void waitForElementToBeInteractive(WebElement element) {
         try {
-            WebDriverWait wait =  new WebDriverWait(webDriver, Duration.ofSeconds(15));
+            WebDriverWait wait = new WebDriverWait(webDriver, Duration.ofSeconds(15));
             // First wait for it to be visible
             wait.until(ExpectedConditions.visibilityOf(element));
 
@@ -145,8 +152,10 @@ public class ProductDetailPage {
                 .filter(webElement -> webElement.getAttribute("data-title").contains(color))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Color option not found: " + color));
+        scrollToMiddleOfPage();
+        scrollToElement(targetColorOption);
         targetColorOption.click();
-        if(!targetColorOption.isSelected()){
+        if (!targetColorOption.isSelected()) {
             targetColorOption.click();
         }
 
@@ -156,7 +165,7 @@ public class ProductDetailPage {
     }
 
     private void chooseSizeAttribute(String size) {
-        WebDriverWait wait = new WebDriverWait(webDriver, Duration.ofSeconds(10));
+        WebDriverWait wait = new WebDriverWait(webDriver, Duration.ofSeconds(20));
         wait.until(ExpectedConditions.visibilityOf(attributeSize));
         List<WebElement> sizeOptions = attributeSize.findElements(By.tagName("li"));
         WebElement targetSizeOption = sizeOptions.stream()
@@ -164,16 +173,26 @@ public class ProductDetailPage {
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Color option not found: " + size));
 //        waitForElementToBeInteractive(targetSizeOption);
+        scrollToMiddleOfPage();
         scrollToElement(targetSizeOption);
-        targetSizeOption.click();
-        if(!targetSizeOption.getAttribute("class").contains("selected")) {
+        waitForElementToBeInteractive(targetSizeOption);
+        do {
+            if (targetSizeOption.getAttribute("class").contains("disabled")) {
+                throw new OutOfStockException("The size option is disabled: " + size);
+            }
             targetSizeOption.click();
-        }
-        Assert.assertTrue(wait.until(ExpectedConditions.attributeContains(targetSizeOption, "class", "selected")));
-        Assert.assertTrue(wait.until(ExpectedConditions.attributeContains(targetSizeOption,"data-title",size)), "The expected size and the actual are not matched with each other!!!");
-        Allure.step("Choose size attribute: " + size);
+            try {
+                Thread.sleep(1000); // Wait for the click to register
+            } catch (InterruptedException e) {
+                log.warn("Sleep interrupted while waiting for size option to be selected", e);
+            }
 
+        } while (!targetSizeOption.getAttribute("class").contains("selected"));
+        Assert.assertTrue(wait.until(ExpectedConditions.attributeContains(targetSizeOption, "class", "selected")));
+        Assert.assertTrue(wait.until(ExpectedConditions.attributeContains(targetSizeOption, "data-title", size)), "The expected size and the actual are not matched with each other!!!");
+        Allure.step("Choose size attribute: " + size);
     }
+
     public void resetVariations() {
         WebDriverWait wait = new WebDriverWait(webDriver, Duration.ofSeconds(10));
         wait.until(ExpectedConditions.visibilityOf(resetVariationsButton));
@@ -213,7 +232,6 @@ public class ProductDetailPage {
     }
 
 
-
     public void addToCartFailedAfterResetVariations(String url, String size, String quantity, String color) {
         WebDriverWait wait = new WebDriverWait(webDriver, Duration.ofSeconds(10));
         openProductDetailPage(url);
@@ -239,20 +257,49 @@ public class ProductDetailPage {
 //        log.info(tooltipText);
     }
 
-        public void addToCartWithInvalidQuantity(String url, String size, String color, String invalidQuantity) {
-            WebDriverWait wait = new WebDriverWait(webDriver, Duration.ofSeconds(10));
-            openProductDetailPage(url);
-            addCardFluentActionsTest(size, invalidQuantity, color);
-            clickAddToCartButton();
+    public void addToCartWithInvalidQuantity(String url, String size, String color, String invalidQuantity) {
+        WebDriverWait wait = new WebDriverWait(webDriver, Duration.ofSeconds(10));
+        openProductDetailPage(url);
+        addCardFluentActionsTest(size, invalidQuantity, color);
+        clickAddToCartButton();
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (!webDriver.findElements(By.xpath("/html/body/div[12]/div[2]/div[2]/div/div[2]/a[3]")).isEmpty()) {
             try {
-                Thread.sleep(5000);
+                Thread.sleep(3000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-
-            if (!webDriver.findElements(By.xpath("/html/body/div[12]/div[2]/div[2]/div/div[2]/a[3]")).isEmpty()) {
-                Assert.fail("Checkout dialog is displayed, but it should not be!");
-            }
-            Allure.step("Attempted to add to cart with invalid quantity: " + invalidQuantity);
+            closeCheckoutDialog();
+            Assert.fail("Checkout dialog is displayed, but it should not be!");
         }
+        Allure.step("Attempted to add to cart with invalid quantity: " + invalidQuantity);
+    }
+
+    public void verifyFailedAddOutOfStockItemToCart(String url, String size, String color, String quantity) {
+        WebDriverWait wait = new WebDriverWait(webDriver, Duration.ofSeconds(10));
+        openProductDetailPage(url);
+        try {
+            addCardFluentActionsTest(size, quantity, color);
+        } catch (OutOfStockException e) {
+            clickAddToCartButton();
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException interruptedException) {
+                throw new RuntimeException(interruptedException);
+            }
+            Assert.assertNotNull(wait.until(ExpectedConditions.alertIsPresent()), "Alert is not present!");
+            wait.until(ExpectedConditions.alertIsPresent());
+            String alertText = webDriver.switchTo().alert().getText();
+            log.info("Alert text: {}", alertText);
+            handleAlertAccept();
+//            Assert.assertTrue(alertText.contains("out of stock"), "Alert text does not contain 'out of stock'");
+            Allure.step("Attempted to add out-of-stock item to cart");
+        }
+
+    }
 }

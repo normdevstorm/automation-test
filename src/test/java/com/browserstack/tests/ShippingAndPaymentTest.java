@@ -5,19 +5,48 @@ import constants.FrameworkConstants;
 import constants.TestExcelDataUtils;
 import io.qameta.allure.Description;
 import org.openqa.selenium.WebDriver;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import pages.OrderShippingAndPaymentPage;
 import utils.DriverManager;
 
 import static constants.TestExcelDataUtils.*;
+import static utils.DriverManager.clearBrowserData;
 
 public class ShippingAndPaymentTest extends SeleniumTest{
 
     ExcelHelpers shippingAndPaymentData = new ExcelHelpers();
 
-   @Test(dependsOnMethods = {
-              "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations",
-           "com.browserstack.tests.ViewCartTest.setShippingAddress"}, groups = {"ClearCookies"}, skipFailedInvocations = true)
+
+    @BeforeMethod(alwaysRun = true, firstTimeOnly = true
+    )
+    @SuppressWarnings("unchecked")
+    public void setUp() throws Exception {
+        driver = DriverManager.getInstance().getDriver();
+        clearBrowserData();
+        ChooseItemVariations.addProductToCartWithVariations();
+    }
+
+    @AfterMethod(alwaysRun = true, lastTimeOnly = true, onlyForGroups = {"ClearCookies"})
+    public void clearCookies() throws Exception {
+        Thread.sleep(5000);
+        clearBrowserData();
+    }
+
+    @AfterMethod(alwaysRun = true, lastTimeOnly = true
+//            , onlyForGroups = {"QuitDriver"}
+    )
+    public void tearDown() throws Exception {
+        driver = DriverManager.getInstance().getDriver();
+        driver.quit();
+    }
+
+
+    @Test(dependsOnMethods = {
+//              "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations",
+//           "com.browserstack.tests.ViewCartTest.setShipingAddress"
+   }, groups = {"ClearCookies"}, skipFailedInvocations = true)
     public void createOrderWithAllValidData() throws Exception {
        OrderShippingAndPaymentPage orderShippingAndPaymentPage = new OrderShippingAndPaymentPage(driver);
        driver.get(FrameworkConstants.SHIPMENT_AND_PAYMENT_URL);
@@ -38,8 +67,9 @@ public class ShippingAndPaymentTest extends SeleniumTest{
     }
 
     @Test(
-            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations",
-            groups = {"ShippingAndPaymentTest"}
+            testName = "TC_SP_2"
+//            ,dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations",
+//            groups = {"ShippingAndPaymentTest"}
     )
     @Description("Create order with empty name field")
     public void createOrderWithEmptyName() throws Exception {
@@ -60,7 +90,8 @@ public class ShippingAndPaymentTest extends SeleniumTest{
     }
 
     @Test(
-            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
+            testName = "TC_SP_3"
+//            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
     )
     @Description("Create order with invalid name field")
     public void verifyOrderFailsWhenNameIsAllDigits() throws Exception {
@@ -82,7 +113,8 @@ public class ShippingAndPaymentTest extends SeleniumTest{
     }
 
     @Test(
-            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
+            testName = "TC_SP_4"
+//            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
     )
     @Description("Create order with empty phone field")
     public void verifyOrderFailsWhenPhoneIsEmpty() throws Exception {
@@ -103,6 +135,7 @@ public class ShippingAndPaymentTest extends SeleniumTest{
     }
 
     @Test(
+            testName = "TC_SP_5"
 //            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
     )
     @Description("Create order with invalid phone field")
@@ -125,7 +158,8 @@ public class ShippingAndPaymentTest extends SeleniumTest{
     }
 
     @Test(
-            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
+            testName = "TC_SP_6"
+//            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
     )
     @Description("Create order with empty email field")
     public void verifyOrderSucceedsWhenEmailIsEmpty() throws Exception {
@@ -146,7 +180,8 @@ public class ShippingAndPaymentTest extends SeleniumTest{
     }
 
     @Test(
-            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
+            testName = "TC_SP_7"
+//            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
     )
     @Description("Create order with invalid email field")
     public void verifyOrderFailsWhenEmailIsInvalid() throws Exception {
@@ -168,7 +203,8 @@ public class ShippingAndPaymentTest extends SeleniumTest{
     }
 
     @Test(
-            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations", groups = {"ClearCookies"}
+            testName = "TC_SP_8"
+//            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations", groups = {"ClearCookies"}
     )
     @Description("Create order with modified district and commune fields")
     public void verifyOrderSucceedsWhenDistrictAndCommuneAreEdited() throws Exception {
@@ -192,6 +228,7 @@ public class ShippingAndPaymentTest extends SeleniumTest{
     }
 
     @Test(
+            testName = "TC_SP_9"
 //            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations"
     )
     @Description("Create order with all address fields empty")
@@ -211,7 +248,8 @@ public class ShippingAndPaymentTest extends SeleniumTest{
     }
 
     @Test(
-            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations", groups = {"ClearCookies"}
+            testName = "TC_SP_10"
+//            dependsOnMethods = "com.browserstack.tests.ChooseItemVariations.addProductToCartWithVariations", groups = {"ClearCookies"}
     )
     @Description("Create order without checking the terms and conditions checkbox")
     public void verifyOrderFailsWhenTermsAndConditionsNotChecked() throws Exception {

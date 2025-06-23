@@ -11,7 +11,7 @@ accessKey: zV8LCCTv78NdrLwwiA8a
 # ======================
 # The following capabilities are used to set up reporting on BrowserStack:
 # Set 'projectName' to the name of your project. Example, Marketing Website
-projectName: VIEW CART TEST # <string> (Default: null)
+projectName: CHECKOUT # <string> (Default: null)
 # Set `buildName` as the name of the job / testsuite being run
 buildName: browserstack build 
 # `buildIdentifier` is a unique id to differentiate every execution that gets appended to

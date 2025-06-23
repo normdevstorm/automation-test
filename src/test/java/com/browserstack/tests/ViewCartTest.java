@@ -9,7 +9,6 @@ import io.qameta.allure.Feature;
 import models.ItemPriceModel;
 import org.slf4j.Logger;
 import org.testng.ITestNGMethod;
-import org.testng.ITestResult;
 import org.testng.Reporter;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -17,8 +16,6 @@ import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 import pages.ViewCartPage;
 import utils.DriverManager;
-
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,7 +45,7 @@ public class ViewCartTest extends  SeleniumTest {
     @AfterMethod(alwaysRun = true, lastTimeOnly = true, onlyForGroups = {"ClearCookies"})
     public void clearCookies() throws Exception {
         Thread.sleep(5000);
-        clearBrowserData();
+//        clearBrowserData();
     }
 
     @AfterMethod(alwaysRun = true, lastTimeOnly = true
@@ -68,6 +65,7 @@ public class ViewCartTest extends  SeleniumTest {
         driver.get(FrameworkConstants.VIEW_CART_URL);
         ViewCartPage viewCartPage = new ViewCartPage(driver);
         viewCartPage.deleteAndRestoreCartItem(1);
+        Thread.sleep(5000);
     }
 
     @Test(testName = "TC_VC_2",
@@ -152,4 +150,5 @@ public class ViewCartTest extends  SeleniumTest {
 
         viewCartPage.verifyOrderPriceSucceed(productLists, shippingRate );
     }
+
 }

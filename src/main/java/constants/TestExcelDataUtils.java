@@ -52,5 +52,6 @@ public class TestExcelDataUtils {
 
 
     static private final String TEST_DATA_PATH = "/run/media/normdevstorm/data-linux/UNI/AUTOMATED_TESTING/testng-browserstack-master/src/test/resources/testdata/";
-    static public final  String ORDER_DATA_PATH =  TEST_DATA_PATH + "ORDER_TEST_DATA.xlsx";
+//    static public final  String ORDER_DATA_PATH =  TEST_DATA_PATH + "ORDER_TEST_DATA.xlsx";
+    static public final  String ORDER_DATA_PATH =  TEST_DATA_PATH + "ORDER_TEST_DATA (Copy).xlsx";
 }
